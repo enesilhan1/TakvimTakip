@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../logic/kaydirma_motoru.dart';
 import '../models/kayma_kaydi.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
@@ -127,6 +128,36 @@ class PlanDeposu {
     final map = kayit.toMap()..remove('id');
     final id = await _db.insert('kayma_kayitlari', map);
     return KaymaKaydi.fromMap({...map, 'id': id});
+  }
+
+  // --------------------------------------------------------------- kaydırma
+
+  /// Bir gün kapanışının sonucunu tek bir işlemde (transaction) yazar:
+  /// planların yeni yerleri, kayma kayıtları ve verilen ayarlar. Yarıda
+  /// kesilirse hiçbiri yazılmaz, planlar yarım kaymış halde kalmaz.
+  Future<void> kaydirmaKaydet(
+    KaydirmaSonucu sonuc, {
+    Map<String, String> ayarlar = const {},
+  }) async {
+    await _db.transaction((txn) async {
+      for (final plan in sonuc.degisenPlanlar) {
+        await txn.update(
+          'planlar',
+          plan.toMap()..remove('id'),
+          where: 'id = ?',
+          whereArgs: [plan.id],
+        );
+      }
+      for (final kayit in sonuc.kaymaKayitlari) {
+        await txn.insert('kayma_kayitlari', kayit.toMap()..remove('id'));
+      }
+      for (final a in ayarlar.entries) {
+        await txn.insert('ayarlar', {
+          'anahtar': a.key,
+          'deger': a.value,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
   }
 
   // ---------------------------------------------------------------- ayarlar
