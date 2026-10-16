@@ -5,6 +5,7 @@ import '../models/kayma_kaydi.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
 import 'plan_formu.dart';
+import 'plan_islemleri.dart';
 
 /// Tek bir günün 24 saatlik çizelgesi (docs/SPEC.md §6).
 ///
@@ -20,11 +21,16 @@ class GunGorunumu extends StatefulWidget {
   /// Açılışta gösterilecek gün (verilmezse bugün).
   final DateTime? ilkGun;
 
+  /// Şu anki saati verir; testlerde sabitlemek için. Verilmezse telefonun
+  /// saati kullanılır.
+  final int Function()? simdiSaat;
+
   const GunGorunumu({
     super.key,
     required this.depo,
     required this.bugun,
     this.ilkGun,
+    this.simdiSaat,
   });
 
   @override
@@ -42,6 +48,8 @@ class _GunGorunumuState extends State<GunGorunumu> {
   bool get _gecmis => _gun.isBefore(widget.bugun);
   bool get _bugunMu => _gun == widget.bugun;
 
+  int _simdiSaat() => widget.simdiSaat?.call() ?? DateTime.now().hour;
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +66,7 @@ class _GunGorunumuState extends State<GunGorunumu> {
 
   /// Bugünse şu anki saatin bir öncesine, değilse 08:00'e kaydırır.
   double _ilkKaydirma() {
-    final saat = _bugunMu ? (DateTime.now().hour - 1).clamp(0, 23) : 8;
+    final saat = _bugunMu ? (_simdiSaat() - 1).clamp(0, 23) : 8;
     return saat * satirYuksekligi;
   }
 
@@ -150,7 +158,7 @@ class _GunGorunumuState extends State<GunGorunumu> {
           : FloatingActionButton(
               tooltip: 'Plan ekle',
               onPressed: () =>
-                  _ekle(_bugunMu ? (DateTime.now().hour + 1).clamp(0, 23) : 9),
+                  _ekle(_bugunMu ? (_simdiSaat() + 1).clamp(0, 23) : 9),
               child: const Icon(Icons.add),
             ),
     );
@@ -165,6 +173,32 @@ class _GunGorunumuState extends State<GunGorunumu> {
       saat: saat,
     );
     if (kaydedildi) _yukle();
+  }
+
+  Future<void> _islemler(Plan plan) async {
+    final degisti = await planIslemleriAc(
+      context,
+      depo: widget.depo,
+      plan: plan,
+      gecmis: _gecmis,
+      bugun: widget.bugun,
+    );
+    if (degisti) _yukle();
+  }
+
+  /// Durum ikonu: yapılmadıysa "yapıldı" yapar, yapıldıysa işareti kaldırır
+  /// (kaldırılabiliyorsa).
+  Future<void> _hizliIsaretle(Plan plan) async {
+    final PlanDurumu yeni;
+    if (plan.durum != PlanDurumu.yapildi) {
+      yeni = PlanDurumu.yapildi;
+    } else if (isaretKaldirilabilir(plan, gecmis: _gecmis)) {
+      yeni = PlanDurumu.isaretsiz;
+    } else {
+      return;
+    }
+    await widget.depo.durumDegistir(plan.id!, yeni);
+    _yukle();
   }
 
   /// 00:00'dan 24:00'e kadar satırları kurar: plan kartları, kayma izleri ve
@@ -183,7 +217,12 @@ class _GunGorunumuState extends State<GunGorunumu> {
           _SaatSatiri(
             saat: saat,
             sure: plan.sure,
-            child: PlanKarti(plan: plan, gecmis: _gecmis),
+            child: PlanKarti(
+              plan: plan,
+              gecmis: _gecmis,
+              onTap: () => _islemler(plan),
+              onDurumTap: () => _hizliIsaretle(plan),
+            ),
           ),
         );
         saat += plan.sure;
@@ -272,7 +311,19 @@ class PlanKarti extends StatelessWidget {
   /// Geçmiş gündeki işaretsiz (sabit) plan "yapılmadı" olarak gösterilir.
   final bool gecmis;
 
-  const PlanKarti({super.key, required this.plan, required this.gecmis});
+  /// Karta dokununca (işlem paneli).
+  final VoidCallback? onTap;
+
+  /// Sağdaki durum ikonuna dokununca (hızlı "yapıldı" işareti).
+  final VoidCallback? onDurumTap;
+
+  const PlanKarti({
+    super.key,
+    required this.plan,
+    required this.gecmis,
+    this.onTap,
+    this.onDurumTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -298,47 +349,55 @@ class PlanKarti extends StatelessWidget {
     return Material(
       color: arkaPlan,
       borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    plan.baslik,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      decoration: iptal ? TextDecoration.lineThrough : null,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 4, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      plan.baslik,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        decoration: iptal ? TextDecoration.lineThrough : null,
+                      ),
                     ),
-                  ),
-                  Text(
-                    altBilgi,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: renk.onSurfaceVariant,
+                    Text(
+                      altBilgi,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: renk.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              yapildi
-                  ? Icons.check_circle
-                  : iptal
-                  ? Icons.block
-                  : yapilmadi
-                  ? Icons.cancel_outlined
-                  : Icons.radio_button_unchecked,
-              color: yapildi ? Colors.green : renk.outline,
-            ),
-          ],
+              IconButton(
+                tooltip: yapildi ? 'İşareti kaldır' : 'Yapıldı',
+                onPressed: onDurumTap,
+                icon: Icon(
+                  yapildi
+                      ? Icons.check_circle
+                      : iptal
+                      ? Icons.block
+                      : yapilmadi
+                      ? Icons.cancel_outlined
+                      : Icons.radio_button_unchecked,
+                  color: yapildi ? Colors.green : renk.outline,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

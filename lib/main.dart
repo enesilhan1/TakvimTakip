@@ -20,10 +20,16 @@ Future<void> main() async {
 class TakvimTakipApp extends StatelessWidget {
   final PlanDeposu depo;
 
-  /// Testlerde sabit bir "bugün" vermek için.
+  /// Testlerde sabit bir "bugün" ve "şu anki saat" vermek için.
   final DateTime? bugunOverride;
+  final int Function()? saatOverride;
 
-  const TakvimTakipApp({super.key, required this.depo, this.bugunOverride});
+  const TakvimTakipApp({
+    super.key,
+    required this.depo,
+    this.bugunOverride,
+    this.saatOverride,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +48,11 @@ class TakvimTakipApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: GunGorunumu(depo: depo, bugun: bugunOverride ?? bugun()),
+      home: GunGorunumu(
+        depo: depo,
+        bugun: bugunOverride ?? bugun(),
+        simdiSaat: saatOverride,
+      ),
     );
   }
 }
