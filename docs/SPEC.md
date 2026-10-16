@@ -60,9 +60,11 @@ Kurallar:
    eklenir. Bandaki herkes yapılmayan plan sayısı kadar ileri kayar.
 3. İçerik girdiği slotun **saat aralığını ve süresini alır** (1 saatlik plan
    2 saatlik slota girerse 2 saat olur, tersi de geçerlidir).
-4. **Zincirin sonu**: Bantta yeri kalmayan plan, bir önceki slotun **ertesi
-   gününe, aynı saat aralığına** yerleşir. O aralık o gün başka bir planla
-   çakışıyorsa bir gün daha ileri gider (çakışmayan ilk güne kadar).
+4. **Zincirin sonu**: Bantta yeri kalmayan plan, **kendi eski saat
+   aralığıyla ertesi güne** yerleşir. O aralık o gün başka bir planla
+   çakışıyorsa bir gün daha ileri gider (çakışmayan ilk güne kadar). Zincirin
+   sırası bozulmaz: bu plan, zincirde kendinden önce gelen plandan daha
+   erkene düşemez (bkz. Örnek 7).
 5. **Yapılmadı sayacı** sadece yapılmayan (kapanan günden kayan) planlarda
    1 artar. Sadece itildiği için kayan planların sayacı artmaz.
 6. **Geçmiş kaydı**: Kapanan günde, kayan planın yerinde soluk bir kayıt kalır:
@@ -99,6 +101,16 @@ Pazartesi 15:00 Kitap (1 saat) yapılmadı. Salı'nın ilk slotu 13:00–15:00 D
 
 ### Örnek 6 (iptal)
 Pazartesi 15:00 Kahve 🚫 iptal → hiçbir şey kaymaz.
+
+### Örnek 7 (zincirin sonunda sıra korunur)
+Pazartesi 08:00 A ve 09:00 B yapılmadı. Gelecekte sadece Salı 13:00 X ve
+Cuma 09:00 Y var. A → Salı 13:00, B → Cuma 09:00. X'in kendi saati 13:00,
+ama Çarşamba 13:00 B'den (Cuma) önce kalacağı için X → Cuma 13:00 olur.
+Y → Cumartesi 09:00.
+
+### Gelecekte erkenden işaretlenmiş planlar
+Gelecekteki bir planı önceden "yapıldı" ya da "iptal" olarak işaretlediysen o
+plan da sabit gibi davranır: banda girmez, yeri değişmez.
 
 ## 5. Kaçırılan günler
 
