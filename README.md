@@ -20,6 +20,9 @@ plan saatine kaydıran** kişisel Android uygulaması.
   kutucuklar, seriler, en çok ertelenenler).
 - **Bildirimler:** Sabah özeti ("Dün 1 plan yapılmadı, 4 plan kaydı…") ve her
   plandan 5 dakika önce hatırlatıcı. Uygulama kapalıyken de çalışır.
+- **Ana ekran widget'ları:** Bugün · Bu hafta · Bu ay — kaç plan var, kaçı
+  bitti; şu anki (yoksa sıradaki) plan, notu ve **✓ Yapıldı** butonu.
+  Haftalıkta 7 günlük grafik; büyütünce sonraki planlar listelenir.
 - **Yedekleme:** Tek dosyaya dışa aktar / geri yükle.
 - **Yapay zekâ asistanı (isteğe bağlı):** "Yarın 18:00'e spor ekle" de;
   asistan önizleme gösterir, sen onaylarsın. **Claude, ChatGPT, Gemini ya da
@@ -31,6 +34,7 @@ plan saatine kaydıran** kişisel Android uygulaması.
   <img src="docs/ekran-goruntuleri/asistan.png" width="180" alt="Claude asistanı">
   <img src="docs/ekran-goruntuleri/bildirim.png" width="180" alt="Hatırlatıcı bildirimi">
   <img src="docs/ekran-goruntuleri/ayarlar.png" width="180" alt="Ayarlar">
+  <img src="docs/ekran-goruntuleri/widget.png" width="180" alt="Ana ekran widget'ları">
 </p>
 
 ## Kurulum (Android 7.0+)

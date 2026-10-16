@@ -198,3 +198,29 @@ Ayarlar ekranında JSON dosyasına **dışa aktar** / dosyadan **içe aktar**.
 | 7 | Yedekleme (JSON) + ayarlar |
 | 8 | APK derleme, telefona kurulum |
 | 9 | Yapay zekâ asistanı (Claude, ChatGPT, Gemini, DeepSeek) |
+| 10 | Ana ekran widget'ları (günlük, haftalık, aylık) |
+
+## 11. Ana ekran widget'ları (Aşama 10)
+
+Üç widget: **Takvim Takip · Bugün**, **· Bu hafta**, **· Bu ay**. Hepsi
+aynı yerleşimde, telefonun açık/koyu temasına uyar.
+
+- **Sayı:** dönemdeki planların yapılan/toplam sayısı (`3/5`). Sayım §6'daki
+  günlük özetle aynıdır: iptaller sayılmaz, kayan planın izi o günün
+  "yapılmadı"sıdır. Hafta Pzt–Paz, ay takvim ayıdır (bütün hafta/ay; ileriki
+  günler de dahil).
+- **Grafik:** günlük ve aylıkta ilerleme çubuğu; haftalıkta Pzt–Paz 7 günün
+  tamamlanma çubukları (bugün vurgulu, planı olmayan gün boş).
+- **Şimdi / Sıradaki:** saati şu ana denk gelen işaretsiz plan "Şimdi ·
+  14:00 · 40 dk kaldı"; yoksa en yakın işaretsiz plan "Sıradaki · 18:00 ·
+  2 sa 15 dk sonra" (yarın ise "Yarın", daha ilerisi "Cmt 24 Eki"; en fazla
+  30 gün ileri). Planın adı (sabitse 📌) ve notu gösterilir.
+- **✓ Yapıldı:** gösterilen plan bugüne aitse butonla uygulamayı açmadan
+  yapıldı işaretlenir; widget'lar ve bildirimler hemen yenilenir, uygulama
+  açılınca görünümler de güncellenir.
+- **Boyut:** widget yüksekliği büyütülünce (≈190 dp) sonraki 3 plan
+  listelenir; küçültülünce (<130 dp) not gizlenir.
+- **Dokununca:** günlük → bugünün gün görünümü, haftalık → Hafta, aylık → Ay.
+- **Güncel tutma:** planlar değişince, gece kaydırmasından sonra ve
+  gösterilen planın başlama/bitme anında (arka plan alarmı) yenilenir;
+  Android ayrıca 30 dakikada bir yeniler.

@@ -8,6 +8,7 @@ Bilgisayara, geliştirici araçlarına ya da hesap açmaya gerek yok.
 - [2. Telefona kur](#2-telefona-kur)
 - [3. İlk açılış](#3-ilk-açılış)
 - [4. (İsteğe bağlı) Yapay zekâ asistanını bağla](#4-isteğe-bağlı-yapay-zekâ-asistanını-bağla)
+- [5. (İsteğe bağlı) Ana ekran widget'ı ekle](#5-isteğe-bağlı-ana-ekran-widgetı-ekle)
 - [Güncelleme](#güncelleme)
 - [Yedekleme ve telefon değiştirme](#yedekleme-ve-telefon-değiştirme)
 - [Sorun giderme](#sorun-giderme)
@@ -124,6 +125,24 @@ anahtarların silinmez.
   "Yarına plan ekle" gibi tek bir istek çoğu modelde 1 sentin altındadır.
   Sohbet ekranının altında yaklaşık maliyet yazar. Fiyatlar sağlayıcılar
   tarafından değiştirilebilir; güncelini sağlayıcının sayfasından kontrol et.
+## 5. (İsteğe bağlı) Ana ekran widget'ı ekle
+
+Ana ekranda boş bir yere **basılı tut → Widget'lar → Takvim Takip**. Üç
+seçenek var: **Bugün**, **Bu hafta** (7 günlük grafikli), **Bu ay**. Birini
+sürükleyip bırak.
+
+- Widget kaç planın olduğunu, kaçını bitirdiğini ve şu anki (yoksa
+  sıradaki) planı notuyla gösterir.
+- **✓ Yapıldı** butonuyla planı uygulamayı açmadan işaretlersin.
+- Kenarından tutup **büyütürsen** sonraki planlar da listelenir.
+- Widget'a dokununca uygulama ilgili görünümde açılır.
+- Widget "Uygulamayı bir kez aç" diyorsa uygulamayı bir kez açıp kapat.
+
+<p>
+  <img src="ekran-goruntuleri/widget.png" width="200" alt="Widget'lar (açık tema)">
+  <img src="ekran-goruntuleri/widget-koyu.png" width="200" alt="Widget'lar (koyu tema)">
+</p>
+
 ## Güncelleme
 
 Yeni sürümün APK'sını aynı şekilde indirip kur; mevcut uygulamanın üstüne
@@ -147,6 +166,7 @@ Ara sıra yedek almanı öneririz.
 |---|---|
 | "Uygulama yüklenmedi" | Telefonda farklı imzalı eski bir sürüm olabilir. Önce yedek al, eskisini kaldır, sonra kur. |
 | Bildirimler gelmiyor | *Ayarlar → Uygulamalar → Takvim Takip → Bildirimler* açık mı? Pil ayarını **Kısıtlama yok** yap ([İlk açılış](#3-ilk-açılış)). |
+| Widget güncellenmiyor | Uygulamayı bir kez aç; pil ayarını **Kısıtlama yok** yap. Widget'ı kaldırıp yeniden eklemek de işe yarar. |
 | Gece kaydırma olmamış | Pil kısıtlaması olabilir; uygulamayı açınca kaçırılan günler sırayla işlenir. |
 | Asistan: "İnternet bağlantısı yok" | İnterneti kontrol et. Devam ediyorsa en son sürümü kur (1.0.0'ın ilk derlemelerinde internet izni eksikti). |
 | Asistan: "API anahtarı geçersiz" | Anahtarı sağlayıcının sayfasından yeniden kopyala; doğru sağlayıcıyı seçtiğinden emin ol. |
