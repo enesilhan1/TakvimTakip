@@ -4,7 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'data/plan_deposu.dart';
 import 'data/veritabani.dart';
 import 'logic/kaydirma_servisi.dart';
-import 'ui/gun_gorunumu.dart';
+import 'ui/ana_ekran.dart';
 import 'utils/tarih.dart';
 
 Future<void> main() async {
@@ -48,7 +48,7 @@ class TakvimTakipApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: GunGorunumu(
+      home: AnaEkran(
         depo: depo,
         bugun: bugunOverride ?? bugun(),
         simdiSaat: saatOverride,

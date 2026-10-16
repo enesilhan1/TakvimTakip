@@ -25,12 +25,16 @@ class GunGorunumu extends StatefulWidget {
   /// saati kullanılır.
   final int Function()? simdiSaat;
 
+  /// Gösterilen gün değişince (ana ekran diğer görünümleri aynı güne açsın).
+  final ValueChanged<DateTime>? onGunDegisti;
+
   const GunGorunumu({
     super.key,
     required this.depo,
     required this.bugun,
     this.ilkGun,
     this.simdiSaat,
+    this.onGunDegisti,
   });
 
   @override
@@ -88,6 +92,7 @@ class _GunGorunumuState extends State<GunGorunumu> {
       _izler = const [];
     });
     if (_kaydirma.hasClients) _kaydirma.jumpTo(_ilkKaydirma());
+    widget.onGunDegisti?.call(_gun);
     _yukle();
   }
 
@@ -333,7 +338,7 @@ class PlanKarti extends StatelessWidget {
     final yapilmadi = gecmis && plan.durum == PlanDurumu.isaretsiz;
 
     final arkaPlan = yapildi
-        ? renk.secondaryContainer
+        ? Colors.green.withValues(alpha: 0.25)
         : iptal || yapilmadi
         ? renk.surfaceContainerHighest
         : renk.primaryContainer;
