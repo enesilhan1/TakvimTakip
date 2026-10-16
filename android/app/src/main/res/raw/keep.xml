@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bildirim ikonu koddan yalnızca adıyla ("@drawable/ic_bildirim")
+     kullanılıyor; sürüm derlemesinde kaynak küçültme onu silmesin. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_bildirim" />

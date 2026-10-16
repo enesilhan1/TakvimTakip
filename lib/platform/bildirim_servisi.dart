@@ -33,7 +33,7 @@ class BildirimServisi {
     }
     await _eklenti.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_bildirim'),
       ),
     );
     _hazir = true;
