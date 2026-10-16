@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Claude asistanı için (api.anthropic.com). Flutter bu izni sadece
+         debug/profile derlemelerine ekliyor; sürüm APK'sında burada olmalı. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Bildirimler (Android 13+ kullanıcıdan istenir) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Hatırlatıcılar ve gece yarısı kaydırması tam zamanında çalışsın.
