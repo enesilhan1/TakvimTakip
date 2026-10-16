@@ -64,9 +64,7 @@ void main() {
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: SohbetEkrani(
           depo: depo,
-          anahtarDeposu: BellekAnahtarDeposu({
-            if (anahtar != null) Saglayici.anthropic: anahtar,
-          }),
+          anahtarDeposu: BellekAnahtarDeposu({Saglayici.anthropic: ?anahtar}),
           simdi: () => DateTime(2026, 10, 16, 15, 42),
           httpIstemcisi: MockClient((_) async => yanitlar[i++]),
         ),

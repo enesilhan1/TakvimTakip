@@ -2,6 +2,8 @@
 /// sağlayıcıdan bağımsız ortak türler (docs/SPEC.md §9).
 library;
 
+import 'dart:convert';
+
 /// Yapay zekâ sağlayıcısı. Her birinin kendi API'si ve API anahtarı var.
 enum Saglayici {
   anthropic(
@@ -361,4 +363,15 @@ abstract class GecmisliIstemci implements YzIstemcisi {
     gecmis.clear();
     _kontrolNoktasi = 0;
   }
+}
+
+/// Araç argümanları bazı sağlayıcılarda JSON metni olarak gelir; bozuksa
+/// boş döner (doğrulama hatası modele geri bildirilir).
+Map<String, dynamic> argumanlariCoz(Object? ham) {
+  if (ham is Map) return Map<String, dynamic>.from(ham);
+  try {
+    final j = jsonDecode('$ham');
+    if (j is Map) return Map<String, dynamic>.from(j);
+  } catch (_) {}
+  return {};
 }

@@ -54,11 +54,13 @@ void main() {
   String? kaydedilenMetin;
   String? secilecekMetin;
   late BellekAnahtarDeposu anahtarlar;
+  Map<Saglayici, String> anahtarlarBaslangic = {};
 
   Future<void> ac(WidgetTester tester) async {
     kaydedilenAd = null;
     kaydedilenMetin = null;
-    anahtarlar = BellekAnahtarDeposu();
+    anahtarlar = BellekAnahtarDeposu(Map.of(anahtarlarBaslangic));
+    anahtarlarBaslangic = {};
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('tr'),
@@ -197,6 +199,83 @@ void main() {
     await bekle(tester);
     expect(anahtarlar.degerler[Saglayici.anthropic], isNull);
     expect(find.textContaining('Girilmedi'), findsOneWidget);
+  });
+
+  testWidgets('sağlayıcı değişince model ve anahtar o sağlayıcıya geçer', (
+    tester,
+  ) async {
+    anahtarlarBaslangic = {Saglayici.anthropic: 'sk-ant-api03-claude-anahtari'};
+    await ac(tester);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('asistan_saglayici')),
+      200,
+    );
+    await bekle(tester);
+
+    await tester.tap(find.byKey(const Key('asistan_saglayici')));
+    await bekle(tester);
+    await tester.tap(find.text('Gemini').last);
+    await bekle(tester);
+
+    expect(await depo.ayarOku(asistanSaglayiciAyari), 'gemini');
+    expect(find.text('Gemini 3.8 Flash'), findsOneWidget);
+    expect(find.text('Gemini API anahtarı'), findsOneWidget);
+    // Claude'un anahtarı Gemini'ye gösterilmez
+    expect(find.textContaining('Girilmedi'), findsOneWidget);
+
+    // Gemini anahtarlarında ön ek kontrolü yok, sadece uzunluk
+    await tester.tap(find.text('Gemini API anahtarı'));
+    await bekle(tester);
+    expect(find.textContaining('ücretsiz kullanım kotası'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('api_anahtari')),
+      'AIzaSyGeminiTestAnahtari123',
+    );
+    await tester.tap(find.text('Kaydet'));
+    await bekle(tester);
+    expect(
+      anahtarlar.degerler[Saglayici.gemini],
+      'AIzaSyGeminiTestAnahtari123',
+    );
+    expect(
+      anahtarlar.degerler[Saglayici.anthropic],
+      'sk-ant-api03-claude-anahtari',
+    );
+
+    // Claude'a geri dönünce onun modeli ve anahtarı geri gelir
+    await tester.tap(find.byKey(const Key('asistan_saglayici')));
+    await bekle(tester);
+    await tester.tap(find.text('Claude').last);
+    await bekle(tester);
+    expect(find.text('Claude Opus 5.5'), findsOneWidget);
+    expect(find.text('Kayıtlı: sk-ant-…tari'), findsOneWidget);
+  });
+
+  testWidgets('listede olmayan model elle yazılır', (tester) async {
+    await ac(tester);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('asistan_model')),
+      200,
+    );
+    await bekle(tester);
+
+    await tester.tap(find.byKey(const Key('asistan_model')));
+    await bekle(tester);
+    await tester.tap(find.text('Diğer…').last);
+    await bekle(tester);
+    await tester.enterText(
+      find.byKey(const Key('elle_model')),
+      'claude-yeni-model',
+    );
+    await tester.tap(find.text('Tamam'));
+    await bekle(tester);
+
+    expect(
+      await depo.ayarOku(modelAyari(Saglayici.anthropic)),
+      'claude-yeni-model',
+    );
+    expect(find.text('claude-yeni-model'), findsOneWidget);
+    expect(find.textContaining('fiyatı bilinmiyor'), findsOneWidget);
   });
 
   testWidgets('Claude modeli seçilir ve saklanır', (tester) async {
