@@ -1,17 +1,17 @@
-# takvim_takip
+# Takvim Takip
 
-Takvim Takip - saatlik plan takip uygulamasi
+Kişisel kullanım için saatlik plan takip uygulaması (Flutter, Android).
 
-## Getting Started
+Yapılmadı olarak kalan planlar gün sonunda otomatik olarak sonraki plan
+slotlarına kayar ("yürüyen bant"). Boş saatlere ve sabit planlara dokunulmaz.
 
-This project is a starting point for a Flutter application.
+Tüm kurallar ve yol haritası: [docs/SPEC.md](docs/SPEC.md)
 
-A few resources to get you started if this is your first Flutter project:
+## Geliştirme
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter test
+flutter run            # bağlı telefon veya emülatörde çalıştırır
+flutter build apk      # build/app/outputs/flutter-apk/app-release.apk
+```
