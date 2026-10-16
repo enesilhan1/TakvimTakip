@@ -58,6 +58,17 @@ class PlanDeposu {
     return satirlar.map(Plan.fromMap).toList();
   }
 
+  /// En çok yapılmayıp ertelenen planlar (sayaç sırasıyla, en fazla [limit]).
+  Future<List<Plan>> enCokErtelenenler({int limit = 3}) async {
+    final satirlar = await _db.query(
+      'planlar',
+      where: 'yapilmadi_sayisi > 0',
+      orderBy: 'yapilmadi_sayisi DESC, gun, baslangic_saati',
+      limit: limit,
+    );
+    return satirlar.map(Plan.fromMap).toList();
+  }
+
   Future<Plan?> planGetir(int id) async {
     final satirlar = await _db.query(
       'planlar',
