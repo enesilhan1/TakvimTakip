@@ -4,8 +4,9 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import '../claude/claude_ayarlari.dart';
-import '../claude/claude_istemcisi.dart';
+import '../asistan/asistan_ayarlari.dart';
+import '../asistan/istemciler.dart';
+import '../asistan/yz.dart';
 import '../data/plan_deposu.dart';
 import '../logic/bildirim_plani.dart';
 import '../logic/kaydirma_servisi.dart';
@@ -67,7 +68,7 @@ class AyarlarButonu extends StatelessWidget {
   }
 }
 
-/// Ayarlar (docs/SPEC.md §7–§9): sabah bildirimi saati, yedekleme ve Claude.
+/// Ayarlar (docs/SPEC.md §7–§9): sabah bildirimi saati, yedekleme ve asistan.
 class AyarlarEkrani extends StatefulWidget {
   final PlanDeposu depo;
   final DosyaKaydet dosyaKaydet;
@@ -93,9 +94,11 @@ class AyarlarEkrani extends StatefulWidget {
 class _AyarlarEkraniState extends State<AyarlarEkrani> {
   int? _sabahSaati;
   String? _apiAnahtari;
-  ClaudeModeli _model = ClaudeModeli.opus;
+  YzModeli _model = Saglayici.anthropic.varsayilanModel;
   bool _veriDegisti = false;
   bool _calisiyor = false;
+
+  static const _elleSecenegi = '__elle__';
 
   @override
   void initState() {
@@ -105,12 +108,12 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
 
   Future<void> _yukle() async {
     final deger = await widget.depo.ayarOku(sabahSaatiAyari);
-    final model = await widget.depo.ayarOku(claudeModelAyari);
-    final anahtar = await widget.anahtarDeposu.oku();
+    final model = await seciliModel(widget.depo);
+    final anahtar = await widget.anahtarDeposu.oku(model.saglayici);
     if (!mounted) return;
     setState(() {
       _sabahSaati = int.tryParse(deger ?? '') ?? varsayilanSabahSaati;
-      _model = ClaudeModeli.idden(model);
+      _model = model;
       _apiAnahtari = anahtar;
     });
   }
@@ -121,27 +124,51 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
     await widget.depo.ayarYaz(sabahSaatiAyari, '$saat');
   }
 
-  Future<void> _modelDegistir(ClaudeModeli model) async {
-    setState(() => _model = model);
-    await widget.depo.ayarYaz(claudeModelAyari, model.id);
+  Future<void> _saglayiciDegistir(Saglayici s) async {
+    await widget.depo.ayarYaz(asistanSaglayiciAyari, s.name);
+    await _yukle();
+  }
+
+  Future<void> _modelDegistir(String? id) async {
+    if (id == null) return;
+    final s = _model.saglayici;
+    if (id == _elleSecenegi) {
+      final elle = await showDialog<String>(
+        context: context,
+        builder: (_) => _ModelPenceresi(saglayici: s),
+      );
+      if (elle == null || elle.isEmpty) return;
+      id = elle;
+    }
+    await widget.depo.ayarYaz(modelAyari(s), id);
+    await _yukle();
   }
 
   Future<void> _anahtarDuzenle() async {
+    final s = _model.saglayici;
     final sonuc = await showDialog<_AnahtarSonucu>(
       context: context,
-      builder: (_) => _AnahtarPenceresi(varMi: _apiAnahtari != null),
+      builder: (_) =>
+          _AnahtarPenceresi(saglayici: s, varMi: _apiAnahtari != null),
     );
     switch (sonuc) {
       case null:
         return;
       case _AnahtarSil():
-        await widget.anahtarDeposu.sil();
+        await widget.anahtarDeposu.sil(s);
         _mesaj('API anahtarı silindi');
       case _AnahtarKaydet(:final anahtar):
-        await widget.anahtarDeposu.yaz(anahtar);
+        await widget.anahtarDeposu.yaz(s, anahtar);
         _mesaj('API anahtarı kaydedildi');
     }
     await _yukle();
+  }
+
+  String get _modelAciklamasi {
+    final m = _model;
+    if (m.elleYazildi) return 'Elle yazılan model · fiyatı bilinmiyor';
+    return '${m.aciklama} · girdi \$${_fiyat(m.girdi!)}, '
+        'çıktı \$${_fiyat(m.cikti!)} / milyon token';
   }
 
   void _mesaj(String metin) {
@@ -306,38 +333,57 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
               enabled: !_calisiyor,
               onTap: _iceAktar,
             ),
-            baslik('Claude asistanı'),
+            baslik('Asistan'),
             ListTile(
-              leading: const Icon(Icons.key_outlined),
-              title: const Text('API anahtarı'),
-              subtitle: Text(
-                _apiAnahtari == null
-                    ? 'Girilmedi · console.anthropic.com → API Keys'
-                    : 'Kayıtlı: ${anahtarMaskesi(_apiAnahtari!)}',
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: const Text('Yapay zekâ'),
+              subtitle: Text(_model.saglayici.ad),
+              trailing: DropdownButton<Saglayici>(
+                key: const Key('asistan_saglayici'),
+                value: _model.saglayici,
+                items: [
+                  for (final s in desteklenenSaglayicilar)
+                    DropdownMenuItem(value: s, child: Text(s.kisaAd)),
+                ],
+                onChanged: (s) {
+                  if (s != null) _saglayiciDegistir(s);
+                },
               ),
-              onTap: _anahtarDuzenle,
             ),
             ListTile(
               leading: const Icon(Icons.psychology_outlined),
               title: const Text('Model'),
-              subtitle: Text(
-                '${_model.aciklama} · girdi \$${_fiyat(_model.girdiFiyati)}, '
-                'çıktı \$${_fiyat(_model.ciktiFiyati)} / milyon token',
-              ),
-              trailing: DropdownButton<ClaudeModeli>(
-                key: const Key('claude_model'),
-                value: _model,
+              subtitle: Text(_modelAciklamasi),
+              trailing: DropdownButton<String>(
+                key: const Key('asistan_model'),
+                value: _model.id,
                 items: [
-                  for (final m in ClaudeModeli.hepsi)
-                    DropdownMenuItem(
-                      value: m,
-                      child: Text(m.ad.replaceFirst('Claude ', '')),
-                    ),
+                  for (final m in _model.saglayici.modeller)
+                    DropdownMenuItem(value: m.id, child: Text(m.ad)),
+                  if (_model.elleYazildi)
+                    DropdownMenuItem(value: _model.id, child: Text(_model.id)),
+                  const DropdownMenuItem(
+                    value: _elleSecenegi,
+                    child: Text('Diğer…'),
+                  ),
                 ],
-                onChanged: (m) {
-                  if (m != null) _modelDegistir(m);
-                },
+                selectedItemBuilder: (context) => [
+                  for (final m in _model.saglayici.modeller) Text(m.ad),
+                  if (_model.elleYazildi) Text(_model.id),
+                  const Text('Diğer…'),
+                ],
+                onChanged: _modelDegistir,
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.key_outlined),
+              title: Text('${_model.saglayici.kisaAd} API anahtarı'),
+              subtitle: Text(
+                _apiAnahtari == null
+                    ? 'Girilmedi · ${_model.saglayici.anahtarSayfasi}'
+                    : 'Kayıtlı: ${anahtarMaskesi(_apiAnahtari!)}',
+              ),
+              onTap: _anahtarDuzenle,
             ),
             baslik('Hakkında'),
             const ListTile(
@@ -368,9 +414,10 @@ class _AnahtarSil extends _AnahtarSonucu {}
 
 /// API anahtarı giriş penceresi.
 class _AnahtarPenceresi extends StatefulWidget {
+  final Saglayici saglayici;
   final bool varMi;
 
-  const _AnahtarPenceresi({required this.varMi});
+  const _AnahtarPenceresi({required this.saglayici, required this.varMi});
 
   @override
   State<_AnahtarPenceresi> createState() => _AnahtarPenceresiState();
@@ -389,8 +436,9 @@ class _AnahtarPenceresiState extends State<_AnahtarPenceresi> {
 
   void _kaydet() {
     final a = _alan.text.trim();
-    if (!a.startsWith('sk-ant-')) {
-      setState(() => _hata = 'Anthropic API anahtarları "sk-ant-" ile başlar.');
+    final hata = anahtarBicimHatasi(widget.saglayici, a);
+    if (hata != null) {
+      setState(() => _hata = hata);
       return;
     }
     Navigator.pop(context, _AnahtarKaydet(a));
@@ -398,39 +446,47 @@ class _AnahtarPenceresiState extends State<_AnahtarPenceresi> {
 
   @override
   Widget build(BuildContext context) {
+    final s = widget.saglayici;
     return AlertDialog(
-      title: const Text('Claude API anahtarı'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'console.anthropic.com → API Keys bölümünden bir anahtar oluştur '
-            've buraya yapıştır. Anahtar telefonda şifreli saklanır, yedeğe '
-            'girmez ve sadece Anthropic\'e gönderilir. Kullanım ücreti '
-            'Anthropic hesabından düşer (claude.ai aboneliğinden ayrıdır).',
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            key: const Key('api_anahtari'),
-            controller: _alan,
-            autofocus: true,
-            obscureText: _gizli,
-            autocorrect: false,
-            enableSuggestions: false,
-            decoration: InputDecoration(
-              labelText: 'sk-ant-...',
-              border: const OutlineInputBorder(),
-              errorText: _hata,
-              suffixIcon: IconButton(
-                tooltip: _gizli ? 'Göster' : 'Gizle',
-                icon: Icon(_gizli ? Icons.visibility : Icons.visibility_off),
-                onPressed: () => setState(() => _gizli = !_gizli),
-              ),
+      title: Text('${s.kisaAd} API anahtarı'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${s.anahtarSayfasi} bölümünden bir anahtar oluştur ve buraya '
+              'yapıştır. Anahtar telefonda şifreli saklanır, yedeğe girmez ve '
+              'yalnızca bu sağlayıcıya gönderilir.\n\n'
+              'Kullanım ücreti bu sağlayıcıdaki API hesabından düşer; '
+              'ChatGPT Plus, Claude Pro gibi aboneliklerden ayrıdır.'
+              '${s == Saglayici.gemini ? ' Gemini\'nin ücretsiz kullanım kotası var.' : ''}',
             ),
-            onSubmitted: (_) => _kaydet(),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('api_anahtari'),
+              controller: _alan,
+              autofocus: true,
+              obscureText: _gizli,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: s.anahtarOneki == null
+                    ? 'API anahtarı'
+                    : '${s.anahtarOneki}...',
+                border: const OutlineInputBorder(),
+                errorText: _hata,
+                errorMaxLines: 2,
+                suffixIcon: IconButton(
+                  tooltip: _gizli ? 'Göster' : 'Gizle',
+                  icon: Icon(_gizli ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _gizli = !_gizli),
+                ),
+              ),
+              onSubmitted: (_) => _kaydet(),
+            ),
+          ],
+        ),
       ),
       actions: [
         if (widget.varMi)
@@ -443,6 +499,72 @@ class _AnahtarPenceresiState extends State<_AnahtarPenceresi> {
           child: const Text('Vazgeç'),
         ),
         FilledButton(onPressed: _kaydet, child: const Text('Kaydet')),
+      ],
+    );
+  }
+}
+
+/// Listede olmayan bir modelin adını elle yazma penceresi.
+class _ModelPenceresi extends StatefulWidget {
+  final Saglayici saglayici;
+
+  const _ModelPenceresi({required this.saglayici});
+
+  @override
+  State<_ModelPenceresi> createState() => _ModelPenceresiState();
+}
+
+class _ModelPenceresiState extends State<_ModelPenceresi> {
+  final _alan = TextEditingController();
+
+  @override
+  void dispose() {
+    _alan.dispose();
+    super.dispose();
+  }
+
+  void _tamam() {
+    final id = _alan.text.trim();
+    if (id.isEmpty || id.contains(' ')) return;
+    Navigator.pop(context, id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.saglayici;
+    return AlertDialog(
+      title: const Text('Modeli elle yaz'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${s.ad} belgelerinde geçen model adını aynen yaz '
+            '(ör. ${s.varsayilanModel.id}). Araç kullanmayı (function '
+            'calling) desteklemeyen modeller plan öneremez. Fiyatı '
+            'bilinmediği için sohbet maliyeti gösterilmez.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('elle_model'),
+            controller: _alan,
+            autofocus: true,
+            autocorrect: false,
+            enableSuggestions: false,
+            decoration: const InputDecoration(
+              labelText: 'Model adı',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) => _tamam(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Vazgeç'),
+        ),
+        FilledButton(onPressed: _tamam, child: const Text('Tamam')),
       ],
     );
   }

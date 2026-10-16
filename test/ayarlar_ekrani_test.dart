@@ -6,7 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:takvim_takip/claude/claude_ayarlari.dart';
+import 'package:takvim_takip/asistan/asistan_ayarlari.dart';
+import 'package:takvim_takip/asistan/yz.dart';
 import 'package:takvim_takip/data/plan_deposu.dart';
 import 'package:takvim_takip/data/veritabani.dart';
 import 'package:takvim_takip/logic/bildirim_plani.dart';
@@ -164,11 +165,11 @@ void main() {
     tester,
   ) async {
     await ac(tester);
-    await tester.ensureVisible(find.text('API anahtarı'));
+    await tester.scrollUntilVisible(find.text('Claude API anahtarı'), 200);
     await bekle(tester);
     expect(find.textContaining('Girilmedi'), findsOneWidget);
 
-    await tester.tap(find.text('API anahtarı'));
+    await tester.tap(find.text('Claude API anahtarı'));
     await bekle(tester);
     await tester.enterText(find.byKey(const Key('api_anahtari')), 'yanlis');
     await tester.tap(find.text('Kaydet'));
@@ -181,32 +182,41 @@ void main() {
     );
     await tester.tap(find.text('Kaydet'));
     await bekle(tester);
-    expect(anahtarlar.deger, 'sk-ant-api03-ABCDEFGHIJKLMNOP-wxyz');
+    expect(
+      anahtarlar.degerler[Saglayici.anthropic],
+      'sk-ant-api03-ABCDEFGHIJKLMNOP-wxyz',
+    );
     expect(find.text('Kayıtlı: sk-ant-…wxyz'), findsOneWidget);
     // Anahtar veritabanına (ve yedeğe) girmez
     final yedek = await depo.yedekAl(simdi);
     expect(yedek.jsonMetni(), isNot(contains('sk-ant-')));
 
-    await tester.tap(find.text('API anahtarı'));
+    await tester.tap(find.text('Claude API anahtarı'));
     await bekle(tester);
     await tester.tap(find.text('Sil'));
     await bekle(tester);
-    expect(anahtarlar.deger, isNull);
+    expect(anahtarlar.degerler[Saglayici.anthropic], isNull);
     expect(find.textContaining('Girilmedi'), findsOneWidget);
   });
 
   testWidgets('Claude modeli seçilir ve saklanır', (tester) async {
     await ac(tester);
-    await tester.ensureVisible(find.byKey(const Key('claude_model')));
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('asistan_model')),
+      200,
+    );
     await bekle(tester);
-    expect(find.text('Opus 5.5'), findsOneWidget); // varsayılan
+    expect(find.text('Claude Opus 5.5'), findsOneWidget); // varsayılan
 
-    await tester.tap(find.byKey(const Key('claude_model')));
+    await tester.tap(find.byKey(const Key('asistan_model')));
     await bekle(tester);
-    await tester.tap(find.text('Haiku 5.5').last);
+    await tester.tap(find.text('Claude Haiku 5.5').last);
     await bekle(tester);
 
-    expect(await depo.ayarOku(claudeModelAyari), 'claude-haiku-5-5');
+    expect(
+      await depo.ayarOku(modelAyari(Saglayici.anthropic)),
+      'claude-haiku-5-5',
+    );
     expect(find.textContaining('En hızlı ve en ucuzu'), findsOneWidget);
   });
 

@@ -6,7 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:takvim_takip/claude/claude_ayarlari.dart';
+import 'package:takvim_takip/asistan/asistan_ayarlari.dart';
+import 'package:takvim_takip/asistan/yz.dart';
 import 'package:takvim_takip/data/plan_deposu.dart';
 import 'package:takvim_takip/data/veritabani.dart';
 import 'package:takvim_takip/models/plan.dart';
@@ -63,7 +64,9 @@ void main() {
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
         home: SohbetEkrani(
           depo: depo,
-          anahtarDeposu: BellekAnahtarDeposu(anahtar),
+          anahtarDeposu: BellekAnahtarDeposu({
+            if (anahtar != null) Saglayici.anthropic: anahtar,
+          }),
           simdi: () => DateTime(2026, 10, 16, 15, 42),
           httpIstemcisi: MockClient((_) async => yanitlar[i++]),
         ),

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../claude/claude_ayarlari.dart';
-import '../claude/claude_istemcisi.dart';
-import '../claude/claude_sohbet.dart';
+import '../asistan/asistan_ayarlari.dart';
+import '../asistan/asistan_sohbeti.dart';
+import '../asistan/istemciler.dart';
+import '../asistan/yz.dart';
 import '../data/plan_deposu.dart';
 import 'ayarlar_ekrani.dart';
 
-/// Claude ile plan sohbeti (docs/SPEC.md §9).
+/// Yapay zekâ asistanıyla plan sohbeti (docs/SPEC.md §9).
 ///
-/// Claude değişiklik önerdiğinde önizleme kartı çıkar; kullanıcı onaylamadan
+/// Asistan değişiklik önerdiğinde önizleme kartı çıkar; kullanıcı onaylamadan
 /// hiçbir plan değişmez.
 class SohbetEkrani extends StatefulWidget {
   final PlanDeposu depo;
@@ -32,8 +33,8 @@ class SohbetEkrani extends StatefulWidget {
 }
 
 class _SohbetEkraniState extends State<SohbetEkrani> {
-  ClaudeSohbeti? _sohbet;
-  ClaudeModeli _model = ClaudeModeli.opus;
+  AsistanSohbeti? _sohbet;
+  YzModeli _model = Saglayici.anthropic.varsayilanModel;
   bool _yuklendi = false;
   final _alan = TextEditingController();
   final _kaydirma = ScrollController();
@@ -61,10 +62,8 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
   /// Anahtar ve model ayarlarına göre sohbeti kurar (ayarlar değişince
   /// yeniden).
   Future<void> _hazirla() async {
-    final anahtar = await widget.anahtarDeposu.oku();
-    final model = ClaudeModeli.idden(
-      await widget.depo.ayarOku(claudeModelAyari),
-    );
+    final model = await seciliModel(widget.depo);
+    final anahtar = await widget.anahtarDeposu.oku(model.saglayici);
     if (!mounted) return;
 
     final eski = _sohbet;
@@ -76,10 +75,10 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
       eski?.dispose();
       _sohbet = anahtar == null
           ? null
-          : (ClaudeSohbeti(
+          : (AsistanSohbeti(
               depo: widget.depo,
               simdi: widget.simdi ?? DateTime.now,
-              istemci: ClaudeIstemcisi(
+              istemci: istemciOlustur(
                 apiAnahtari: anahtar,
                 model: model,
                 httpIstemcisi: widget.httpIstemcisi,
@@ -159,7 +158,8 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
                           padding: const EdgeInsets.all(12),
                           children: [
                             for (final o in s.ogeler) _oge(context, s, o),
-                            if (s.calisiyor) const _Dusunuyor(),
+                            if (s.calisiyor)
+                              _Dusunuyor(_model.saglayici.kisaAd),
                           ],
                         ),
                 ),
@@ -181,14 +181,14 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Claude\'a planlarını düzenletmek için Anthropic API anahtarını '
-            'ayarlara gir.',
+          Text(
+            'Asistanın planlarını düzenleyebilmesi için '
+            '${_model.saglayici.ad} API anahtarını ayarlara gir.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'console.anthropic.com → API Keys',
+            _model.saglayici.anahtarSayfasi,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
@@ -210,7 +210,7 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
         children: [
           const Text(
             'Planlarınla ilgili bir şey sor ya da değiştirmesini iste.\n'
-            'Claude önce önerir; sen onaylamadan hiçbir şey değişmez.',
+            'Asistan önce önerir; sen onaylamadan hiçbir şey değişmez.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -228,7 +228,7 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
     ),
   );
 
-  Widget _oge(BuildContext context, ClaudeSohbeti s, SohbetOgesi o) {
+  Widget _oge(BuildContext context, AsistanSohbeti s, SohbetOgesi o) {
     final renk = Theme.of(context).colorScheme;
     return switch (o) {
       KullaniciMesaji(:final metin) => _Balon(
@@ -236,7 +236,7 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
         sagda: true,
         renk: renk.primaryContainer,
       ),
-      ClaudeMesaji(:final metin) => _Balon(
+      AsistanMesaji(:final metin) => _Balon(
         metin: metin,
         sagda: false,
         renk: renk.surfaceContainerHigh,
@@ -259,7 +259,7 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
     };
   }
 
-  Widget _girdi(BuildContext context, ClaudeSohbeti s) {
+  Widget _girdi(BuildContext context, AsistanSohbeti s) {
     final kapali = s.calisiyor || s.onayBekliyor;
     return SafeArea(
       top: false,
@@ -268,13 +268,13 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (s.maliyet > 0)
+            if ((s.maliyet ?? 0) > 0)
               Align(
                 alignment: Alignment.centerRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8, bottom: 2),
                   child: Text(
-                    'Bu sohbet ≈ \$${s.maliyet.toStringAsFixed(3)}',
+                    'Bu sohbet ≈ \$${s.maliyet!.toStringAsFixed(3)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -294,7 +294,7 @@ class _SohbetEkraniState extends State<SohbetEkrani> {
                     decoration: InputDecoration(
                       hintText: s.onayBekliyor
                           ? 'Önce öneriyi onayla ya da reddet'
-                          : 'Claude\'a yaz…',
+                          : 'Asistana yaz…',
                       border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(24)),
                       ),
@@ -347,7 +347,9 @@ class _Balon extends StatelessWidget {
 }
 
 class _Dusunuyor extends StatelessWidget {
-  const _Dusunuyor();
+  final String ad;
+
+  const _Dusunuyor(this.ad);
 
   @override
   Widget build(BuildContext context) {
@@ -361,10 +363,7 @@ class _Dusunuyor extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: 10),
-          Text(
-            'Claude düşünüyor…',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text('$ad düşünüyor…', style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );

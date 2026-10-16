@@ -6,7 +6,7 @@ import '../data/plan_deposu.dart';
 import '../logic/plan_islemleri.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
-import 'claude_istemcisi.dart';
+import 'yz.dart';
 
 /// Sohbet ekranında gösterilen bir öğe.
 sealed class SohbetOgesi {}
@@ -16,12 +16,12 @@ class KullaniciMesaji extends SohbetOgesi {
   KullaniciMesaji(this.metin);
 }
 
-class ClaudeMesaji extends SohbetOgesi {
+class AsistanMesaji extends SohbetOgesi {
   final String metin;
-  ClaudeMesaji(this.metin);
+  AsistanMesaji(this.metin);
 }
 
-/// Hata ya da durum bilgisi (ör. "Claude'un önerisi geçersizdi").
+/// Hata ya da durum bilgisi (ör. "önerisi geçersizdi").
 class BilgiMesaji extends SohbetOgesi {
   final String metin;
   final bool hata;
@@ -30,7 +30,7 @@ class BilgiMesaji extends SohbetOgesi {
 
 enum OneriDurumu { bekliyor, onaylandi, reddedildi, hata }
 
-/// Claude'un önerdiği değişiklikler; kullanıcı onaylayana kadar uygulanmaz.
+/// Asistanın önerdiği değişiklikler; kullanıcı onaylayana kadar uygulanmaz.
 class DegisiklikOnerisi extends SohbetOgesi {
   final String aciklama;
   final DegisiklikPlani plan;
@@ -41,130 +41,105 @@ class DegisiklikOnerisi extends SohbetOgesi {
   DegisiklikOnerisi(this.aciklama, this.plan);
 }
 
-/// Claude ile plan sohbeti (docs/SPEC.md §9).
+/// Yapay zekâ asistanıyla plan sohbeti (docs/SPEC.md §9). Sağlayıcıdan
+/// bağımsızdır; asıl API çağrıları [YzIstemcisi]'nde.
 ///
-/// Claude'a her mesajda güncel tarih ve önümüzdeki 14 günün planları verilir.
-/// İki aracı var: `planlari_listele` (sadece okur, hemen çalışır) ve
-/// `degisiklik_oner` (önerir; kullanıcı onaylayınca tek seferde uygulanır).
-/// Sohbet geçmişi API'ye hiç değiştirilmeden, sadece sonuna eklenerek
-/// gönderilir (düşünme blokları dahil).
-class ClaudeSohbeti extends ChangeNotifier {
+/// Asistana her mesajda güncel tarih ve önümüzdeki 14 günün planları
+/// verilir. İki aracı var: `planlari_listele` (sadece okur, hemen çalışır)
+/// ve `degisiklik_oner` (önerir; kullanıcı onaylayınca tek seferde
+/// uygulanır).
+class AsistanSohbeti extends ChangeNotifier {
   final PlanDeposu depo;
-  final ClaudeIstemcisi istemci;
+  final YzIstemcisi istemci;
   final DateTime Function() simdi;
 
-  ClaudeSohbeti({
+  AsistanSohbeti({
     required this.depo,
     required this.istemci,
     this.simdi = DateTime.now,
   });
 
   final List<SohbetOgesi> ogeler = [];
-  final List<Map<String, Object?>> _gecmis = [];
   bool _calisiyor = false;
   double _maliyet = 0;
+  bool _maliyetBilinmiyor = false;
 
-  /// Claude yanıt hazırlıyor mu (yazma göstergesi için).
+  /// Asistan yanıt hazırlıyor mu (yazma göstergesi için).
   bool get calisiyor => _calisiyor;
 
-  /// Bu sohbetin yaklaşık maliyeti (dolar).
-  double get maliyet => _maliyet;
+  /// Bu sohbetin yaklaşık maliyeti (dolar). Elle yazılan modelde fiyat
+  /// bilinmediği için null.
+  double? get maliyet => _maliyetBilinmiyor ? null : _maliyet;
 
   /// Onay bekleyen öneri varsa yeni mesaj gönderilemez.
   bool get onayBekliyor => ogeler.any(
     (o) => o is DegisiklikOnerisi && o.durum == OneriDurumu.bekliyor,
   );
 
+  String get _ad => istemci.model.saglayici.kisaAd;
+
   static const _enFazlaTur = 8;
 
-  /// Kullanıcının mesajını gönderir ve Claude'un turu bitene kadar
+  /// Kullanıcının mesajını gönderir ve asistanın turu bitene kadar
   /// (araç çağrıları ve onaylar dahil) devam eder.
   Future<void> gonder(String metin) async {
     final temiz = metin.trim();
     if (temiz.isEmpty || _calisiyor || onayBekliyor) return;
 
     ogeler.add(KullaniciMesaji(temiz));
-    _gecmis.add({
-      'role': 'user',
-      'content': [
-        {'type': 'text', 'text': await _baglam()},
-        {'type': 'text', 'text': temiz},
-      ],
-    });
+    istemci.kullaniciEkle(await _baglam(), temiz);
     _calisiyor = true;
     notifyListeners();
 
     try {
       for (var tur = 0; tur < _enFazlaTur; tur++) {
-        final yanit = await istemci.mesajGonder(
+        final yanit = await istemci.yanitAl(
           sistem: sistemIstemi,
           araclar: araclar,
-          mesajlar: _gecmis,
         );
-        _maliyet += istemci.model.maliyet(
-          yanit['usage'] as Map<String, dynamic>?,
-        );
-        final icerik = (yanit['content'] as List).cast<Map<String, dynamic>>();
-        // Yanıt olduğu gibi geçmişe eklenir (düşünme blokları dahil).
-        _gecmis.add({'role': 'assistant', 'content': icerik});
+        final m = istemci.model.maliyet(yanit.kullanim);
+        if (m == null) {
+          _maliyetBilinmiyor = true;
+        } else {
+          _maliyet += m;
+        }
 
-        final stop = yanit['stop_reason'];
-        if (stop == 'refusal') {
+        if (yanit.son == YanitSonu.ret) {
           ogeler.add(
             BilgiMesaji(
-              'Claude bu isteği yanıtlayamadı. Farklı bir şekilde sormayı dene.',
+              '$_ad bu isteği yanıtlayamadı. Farklı bir şekilde sormayı dene.',
               hata: true,
             ),
           );
           break;
         }
 
-        for (final blok in icerik) {
-          if (blok['type'] == 'text') {
-            final t = (blok['text'] as String).trim();
-            if (t.isNotEmpty) ogeler.add(ClaudeMesaji(t));
-          }
+        for (final t in yanit.metinler) {
+          if (t.trim().isNotEmpty) ogeler.add(AsistanMesaji(t.trim()));
         }
         notifyListeners();
 
-        if (stop == 'max_tokens') {
+        if (yanit.son == YanitSonu.uzunluk) {
           ogeler.add(BilgiMesaji('Yanıt çok uzun olduğu için yarıda kesildi.'));
           break;
         }
-        if (stop != 'tool_use') break;
+        if (yanit.son != YanitSonu.arac || yanit.cagrilar.isEmpty) break;
 
-        final sonuclar = <Map<String, Object?>>[];
-        for (final blok in icerik.where((b) => b['type'] == 'tool_use')) {
-          sonuclar.add(await _aracCalistir(blok));
+        final sonuclar = <AracSonucu>[];
+        for (final c in yanit.cagrilar) {
+          sonuclar.add(await _aracCalistir(c));
         }
-        // Bütün araç sonuçları tek bir mesajda geri gönderilir.
-        _gecmis.add({'role': 'user', 'content': sonuclar});
+        istemci.sonuclariEkle(sonuclar);
         _calisiyor = true;
         notifyListeners();
       }
-    } on ClaudeHatasi catch (e) {
+    } on YzHatasi catch (e) {
       ogeler.add(BilgiMesaji(e.mesaj, hata: true));
-      _sonMesajiGeriAl();
+      // Yanıtsız kalan mesaj geçmişten geri alınır ki sohbet bozulmasın.
+      istemci.geriAl();
     } finally {
       _calisiyor = false;
       notifyListeners();
-    }
-  }
-
-  /// Hata olursa yanıtsız kalan son kullanıcı mesajı geçmişten çıkarılır;
-  /// yoksa sonraki istekte art arda iki kullanıcı mesajı gider.
-  void _sonMesajiGeriAl() {
-    while (_gecmis.isNotEmpty && _gecmis.last['role'] == 'user') {
-      final icerik = _gecmis.last['content'] as List;
-      final aracSonucu = icerik.any((b) => (b as Map)['type'] == 'tool_result');
-      if (aracSonucu) {
-        // Araç sonucunu silmek onu isteyen yanıtı yetim bırakır; ikisini de.
-        _gecmis.removeLast();
-        if (_gecmis.isNotEmpty) _gecmis.removeLast();
-      } else {
-        _gecmis.removeLast();
-        break;
-      }
     }
   }
 
@@ -179,40 +154,32 @@ class ClaudeSohbeti extends ChangeNotifier {
   void sifirla() {
     if (_calisiyor) return;
     ogeler.clear();
-    _gecmis.clear();
+    istemci.temizle();
     _maliyet = 0;
+    _maliyetBilinmiyor = false;
     notifyListeners();
   }
 
-  Future<Map<String, Object?>> _aracCalistir(Map<String, dynamic> blok) async {
-    final id = blok['id'] as String;
-    final girdi = Map<String, dynamic>.from(blok['input'] as Map);
-
-    Map<String, Object?> sonuc(String metin, {bool hata = false}) => {
-      'type': 'tool_result',
-      'tool_use_id': id,
-      'content': metin,
-      if (hata) 'is_error': true,
-    };
-
+  Future<AracSonucu> _aracCalistir(AracCagrisi c) async {
     try {
-      switch (blok['name']) {
+      switch (c.ad) {
         case 'planlari_listele':
-          return sonuc(await _listele(girdi));
+          return AracSonucu(c, await _listele(c.girdi));
         case 'degisiklik_oner':
-          return sonuc(await _oner(girdi));
+          return AracSonucu(c, await _oner(c.girdi));
         default:
-          return sonuc('Bilinmeyen araç: ${blok['name']}', hata: true);
+          return AracSonucu(c, 'Bilinmeyen araç: ${c.ad}', hata: true);
       }
     } on IslemHatasi catch (e) {
       ogeler.add(
         BilgiMesaji(
-          'Claude\'un önerisi uygulanamazdı: ${e.mesaj} '
-          '(Claude\'dan düzeltmesi istendi.)',
+          'Asistanın önerisi uygulanamazdı: ${e.mesaj} '
+          '(düzeltmesi istendi.)',
         ),
       );
       notifyListeners();
-      return sonuc(
+      return AracSonucu(
+        c,
         'Öneri geçersiz, hiçbir şey değişmedi: ${e.mesaj}',
         hata: true,
       );
@@ -312,7 +279,7 @@ class ClaudeSohbeti extends ChangeNotifier {
   }
 }
 
-/// Claude'a gösterilen tek satırlık plan:
+/// Asistana gösterilen tek satırlık plan:
 /// `#3 · 2026-10-16 Cuma · 15:00–17:00 · Ders · işaretsiz · not: türev`
 String planSatiri(Plan p) => [
   '#${p.id}',
@@ -327,15 +294,15 @@ String planSatiri(Plan p) => [
   if (p.not.isNotEmpty) 'not: ${p.not}',
 ].join(' · ');
 
-/// Claude'un araçları. Sabit tutulur (istem önbelleği bozulmasın).
-final List<Map<String, Object?>> araclar = [
-  {
-    'name': 'planlari_listele',
-    'description':
+/// Asistanın araçları. Sabit tutulur (istem önbelleği bozulmasın).
+const List<AracTanimi> araclar = [
+  AracTanimi(
+    ad: 'planlari_listele',
+    aciklama:
         'Verilen tarih aralığındaki (ikisi dahil) bütün planları listeler. '
         'Bağlamda verilen 14 günün dışındaki tarihler için kullan. '
         'Sadece okur, hiçbir şeyi değiştirmez.',
-    'input_schema': {
+    sema: {
       'type': 'object',
       'properties': {
         'baslangic': {'type': 'string', 'description': 'YYYY-AA-GG'},
@@ -343,15 +310,15 @@ final List<Map<String, Object?>> araclar = [
       },
       'required': ['baslangic', 'bitis'],
     },
-  },
-  {
-    'name': 'degisiklik_oner',
-    'description':
+  ),
+  AracTanimi(
+    ad: 'degisiklik_oner',
+    aciklama:
         'Planlarda değişiklik ÖNERİR. Kullanıcıya önizleme gösterilir; '
         'kullanıcı onaylarsa hepsi birlikte uygulanır, reddederse hiçbiri. '
         'Sonuç olarak onaylanıp onaylanmadığını öğrenirsin. Birbiriyle '
         'ilgili bütün değişiklikleri tek çağrıda, uygulanacak sırayla ver.',
-    'input_schema': {
+    sema: {
       'type': 'object',
       'properties': {
         'aciklama': {
@@ -398,7 +365,7 @@ final List<Map<String, Object?>> araclar = [
       },
       'required': ['aciklama', 'islemler'],
     },
-  },
+  ),
 ];
 
 /// Sistem istemi. Sabit tutulur (istem önbelleği bozulmasın); değişen

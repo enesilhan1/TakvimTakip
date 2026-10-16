@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:takvim_takip/claude/claude_istemcisi.dart';
-import 'package:takvim_takip/claude/claude_sohbet.dart';
+import 'package:takvim_takip/asistan/anthropic.dart';
+import 'package:takvim_takip/asistan/asistan_sohbeti.dart';
+import 'package:takvim_takip/asistan/yz.dart';
 import 'package:takvim_takip/data/plan_deposu.dart';
 import 'package:takvim_takip/data/veritabani.dart';
 import 'package:takvim_takip/models/plan.dart';
@@ -56,7 +57,7 @@ Map<String, Object?> arac(String ad, Map<String, Object?> girdi) => {
 
 /// Claude'un öneri kartı çıkana kadar bekler (veritabanı işlemleri gerçek
 /// zamanda sürdüğü için sabit sayıda olay döngüsü yetmeyebilir).
-Future<DegisiklikOnerisi> oneriBekle(ClaudeSohbeti s) async {
+Future<DegisiklikOnerisi> oneriBekle(AsistanSohbeti s) async {
   final son = DateTime.now().add(const Duration(seconds: 10));
   while (DateTime.now().isBefore(son)) {
     final o = s.ogeler.whereType<DegisiklikOnerisi>();
@@ -81,15 +82,12 @@ void main() {
 
   tearDown(() => db.close());
 
-  ClaudeSohbeti sohbet(
-    SahteApi api, {
-    ClaudeModeli model = ClaudeModeli.opus,
-  }) => ClaudeSohbeti(
+  AsistanSohbeti sohbet(SahteApi api, {YzModeli? model}) => AsistanSohbeti(
     depo: depo,
     simdi: () => simdi,
-    istemci: ClaudeIstemcisi(
+    istemci: AnthropicIstemcisi(
       apiAnahtari: 'test-anahtari',
-      model: model,
+      model: model ?? Saglayici.anthropic.varsayilanModel,
       httpIstemcisi: api.client,
       tekrarBeklemesi: Duration.zero,
     ),
@@ -126,7 +124,10 @@ void main() {
       final api = SahteApi([
         (_) => mesaj([metin('ok')]),
       ]);
-      await sohbet(api, model: ClaudeModeli.haiku).gonder('selam');
+      await sohbet(
+        api,
+        model: Saglayici.anthropic.model('claude-haiku-5-5'),
+      ).gonder('selam');
 
       expect(api.istekler.single['model'], 'claude-haiku-5-5');
       expect(api.istekler.single.containsKey('fallbacks'), isFalse);
@@ -142,7 +143,7 @@ void main() {
       final s = sohbet(api);
       await s.gonder('selam');
       expect(api.istekler, hasLength(3));
-      expect((s.ogeler.last as ClaudeMesaji).metin, 'Sonunda!');
+      expect((s.ogeler.last as AsistanMesaji).metin, 'Sonunda!');
     });
 
     test('hatalar Türkçe ve anlaşılır', () async {
@@ -201,7 +202,7 @@ void main() {
       expect(icerik[1]['text'], 'Bugün neler var?');
       expect(s.ogeler.map((o) => o.runtimeType), [
         KullaniciMesaji,
-        ClaudeMesaji,
+        AsistanMesaji,
       ]);
     });
 
@@ -249,7 +250,7 @@ void main() {
       expect(sonuc['content'], contains('onayladı'));
       expect(sonuc.containsKey('is_error'), isFalse);
       expect(
-        (s.ogeler.last as ClaudeMesaji).metin,
+        (s.ogeler.last as AsistanMesaji).metin,
         'Tamamdır, ders artık 18:00\'de.',
       );
     });
@@ -363,7 +364,7 @@ void main() {
       final m = api.istekler[1]['messages'] as List;
       expect(m, hasLength(1));
       expect((m.single['content'] as List)[1]['text'], 'ikinci');
-      expect((s.ogeler.last as ClaudeMesaji).metin, 'Şimdi çalıştı.');
+      expect((s.ogeler.last as AsistanMesaji).metin, 'Şimdi çalıştı.');
     });
 
     test('düşünme blokları geçmişte olduğu gibi geri gönderilir', () async {
