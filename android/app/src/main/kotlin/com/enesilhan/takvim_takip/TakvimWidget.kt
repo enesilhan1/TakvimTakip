@@ -158,16 +158,17 @@ abstract class TakvimWidget : HomeWidgetProvider() {
         val bmp = Bitmap.createBitmap(g, y, Bitmap.Config.ARGB_8888)
         val tuval = Canvas(bmp)
 
-        fun renk(id: Int) = context.getColor(id)
-        val iz = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = renk(R.color.widget_iz) }
-        val dolu = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = renk(R.color.widget_tamam) }
+        // Bitmap telefon koyu/açık temaya geçince yeniden çizilmez; bu yüzden
+        // renkler iki zeminde de okunacak sabit, yarı saydam tonlar.
+        val iz = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x4D8C8CA0 }
+        val dolu = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF43A047.toInt() }
         val yazi = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = renk(R.color.widget_ikincil)
+            color = 0xFF8C8CA0.toInt()
             textSize = 10 * yogunluk
             textAlign = Paint.Align.CENTER
         }
         val bugunYazi = Paint(yazi).apply {
-            color = renk(R.color.widget_vurgu)
+            color = 0xFF5C6BC0.toInt()
             typeface = Typeface.DEFAULT_BOLD
         }
 
