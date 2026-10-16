@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../data/plan_deposu.dart';
+import 'ay_gorunumu.dart';
 import 'gun_gorunumu.dart';
 import 'hafta_gorunumu.dart';
 
 /// Alttaki menüyle görünümler arasında geçiş: Gün / Hafta / Ay.
 ///
-/// Seçili gün görünümler arasında ortaktır: haftalık görünümde bir güne
-/// dokununca gün görünümü o güne açılır.
+/// Seçili gün görünümler arasında ortaktır: haftalık ya da aylık görünümde
+/// bir güne dokununca gün görünümü o güne açılır.
 class AnaEkran extends StatefulWidget {
   final PlanDeposu depo;
   final DateTime bugun;
@@ -49,6 +50,13 @@ class _AnaEkranState extends State<AnaEkran> {
         onGunDegisti: (g) => _gun = g,
         onGunSec: _guneGit,
       ),
+      2 => AyGorunumu(
+        depo: widget.depo,
+        bugun: widget.bugun,
+        gun: _gun,
+        onGunDegisti: (g) => _gun = g,
+        onGunSec: _guneGit,
+      ),
       _ => GunGorunumu(
         key: ValueKey(_gunSurumu),
         depo: widget.depo,
@@ -71,6 +79,7 @@ class _AnaEkranState extends State<AnaEkran> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.view_day), label: 'Gün'),
           NavigationDestination(icon: Icon(Icons.view_week), label: 'Hafta'),
+          NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Ay'),
         ],
       ),
     );
