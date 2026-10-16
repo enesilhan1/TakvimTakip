@@ -127,6 +127,32 @@ class PlanDeposu {
     _degisiklik.add(null);
   }
 
+  /// Doğrulanmış bir değişiklik setini (bkz. islemleriDogrula) tek işlemde
+  /// uygular: ya hepsi ya hiçbiri.
+  Future<void> topluUygula({
+    List<Plan> eklenecek = const [],
+    List<Plan> guncellenecek = const [],
+    List<int> silinecek = const [],
+  }) async {
+    await _db.transaction((txn) async {
+      for (final id in silinecek) {
+        await txn.delete('planlar', where: 'id = ?', whereArgs: [id]);
+      }
+      for (final p in guncellenecek) {
+        await txn.update(
+          'planlar',
+          p.toMap()..remove('id'),
+          where: 'id = ?',
+          whereArgs: [p.id],
+        );
+      }
+      for (final p in eklenecek) {
+        await txn.insert('planlar', p.toMap()..remove('id'));
+      }
+    }, exclusive: true);
+    _degisiklik.add(null);
+  }
+
   Future<void> _cakismaKontrol(Plan plan) async {
     for (final diger in await gununPlanlari(plan.gun)) {
       if (diger.id != plan.id && diger.cakisir(plan)) {
