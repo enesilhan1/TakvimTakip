@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:takvim_takip/claude/claude_ayarlari.dart';
 import 'package:takvim_takip/data/plan_deposu.dart';
 import 'package:takvim_takip/data/veritabani.dart';
 import 'package:takvim_takip/logic/bildirim_plani.dart';
@@ -25,6 +27,8 @@ void main() {
   final simdi = DateTime(2026, 10, 20, 14, 30);
 
   setUp(() async {
+    // Testte Android'in şifreli deposu yok; paketin sahte deposu.
+    FlutterSecureStorage.setMockInitialValues({});
     db = await Veritabani.acFactory(
       databaseFactoryFfiNoIsolate,
       inMemoryDatabasePath,
@@ -48,10 +52,12 @@ void main() {
   String? kaydedilenAd;
   String? kaydedilenMetin;
   String? secilecekMetin;
+  late BellekAnahtarDeposu anahtarlar;
 
   Future<void> ac(WidgetTester tester) async {
     kaydedilenAd = null;
     kaydedilenMetin = null;
+    anahtarlar = BellekAnahtarDeposu();
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('tr'),
@@ -66,6 +72,7 @@ void main() {
             return true;
           },
           dosyaSec: () async => secilecekMetin,
+          anahtarDeposu: anahtarlar,
         ),
       ),
     );
@@ -151,6 +158,56 @@ void main() {
     await tester.tap(find.text('Tamam'));
     await bekle(tester);
     expect(await depo.gununPlanlari(bugun), hasLength(1));
+  });
+
+  testWidgets('API anahtarı kaydedilir, maskeli gösterilir ve silinir', (
+    tester,
+  ) async {
+    await ac(tester);
+    await tester.ensureVisible(find.text('API anahtarı'));
+    await bekle(tester);
+    expect(find.textContaining('Girilmedi'), findsOneWidget);
+
+    await tester.tap(find.text('API anahtarı'));
+    await bekle(tester);
+    await tester.enterText(find.byKey(const Key('api_anahtari')), 'yanlis');
+    await tester.tap(find.text('Kaydet'));
+    await bekle(tester);
+    expect(find.textContaining('"sk-ant-" ile başlar'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('api_anahtari')),
+      'sk-ant-api03-ABCDEFGHIJKLMNOP-wxyz',
+    );
+    await tester.tap(find.text('Kaydet'));
+    await bekle(tester);
+    expect(anahtarlar.deger, 'sk-ant-api03-ABCDEFGHIJKLMNOP-wxyz');
+    expect(find.text('Kayıtlı: sk-ant-…wxyz'), findsOneWidget);
+    // Anahtar veritabanına (ve yedeğe) girmez
+    final yedek = await depo.yedekAl(simdi);
+    expect(yedek.jsonMetni(), isNot(contains('sk-ant-')));
+
+    await tester.tap(find.text('API anahtarı'));
+    await bekle(tester);
+    await tester.tap(find.text('Sil'));
+    await bekle(tester);
+    expect(anahtarlar.deger, isNull);
+    expect(find.textContaining('Girilmedi'), findsOneWidget);
+  });
+
+  testWidgets('Claude modeli seçilir ve saklanır', (tester) async {
+    await ac(tester);
+    await tester.ensureVisible(find.byKey(const Key('claude_model')));
+    await bekle(tester);
+    expect(find.text('Opus 5.5'), findsOneWidget); // varsayılan
+
+    await tester.tap(find.byKey(const Key('claude_model')));
+    await bekle(tester);
+    await tester.tap(find.text('Haiku 5.5').last);
+    await bekle(tester);
+
+    expect(await depo.ayarOku(claudeModelAyari), 'claude-haiku-5-5');
+    expect(find.textContaining('En hızlı ve en ucuzu'), findsOneWidget);
   });
 
   testWidgets('görünümlerdeki ⚙ butonu ayarları açar', (tester) async {

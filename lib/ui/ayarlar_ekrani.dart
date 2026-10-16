@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../claude/claude_ayarlari.dart';
+import '../claude/claude_istemcisi.dart';
 import '../data/plan_deposu.dart';
 import '../logic/bildirim_plani.dart';
 import '../logic/kaydirma_servisi.dart';
@@ -65,11 +67,12 @@ class AyarlarButonu extends StatelessWidget {
   }
 }
 
-/// Ayarlar (docs/SPEC.md §7–§8): sabah bildirimi saati ve yedekleme.
+/// Ayarlar (docs/SPEC.md §7–§9): sabah bildirimi saati, yedekleme ve Claude.
 class AyarlarEkrani extends StatefulWidget {
   final PlanDeposu depo;
   final DosyaKaydet dosyaKaydet;
   final DosyaSec dosyaSec;
+  final AnahtarDeposu anahtarDeposu;
 
   /// Yedekteki zamanlar ve yedek alma anı için (testlerde sabitlenir).
   final DateTime Function() simdi;
@@ -79,6 +82,7 @@ class AyarlarEkrani extends StatefulWidget {
     required this.depo,
     this.dosyaKaydet = _sistemleKaydet,
     this.dosyaSec = _sistemleSec,
+    this.anahtarDeposu = const GuvenliAnahtarDeposu(),
     this.simdi = DateTime.now,
   });
 
@@ -88,6 +92,8 @@ class AyarlarEkrani extends StatefulWidget {
 
 class _AyarlarEkraniState extends State<AyarlarEkrani> {
   int? _sabahSaati;
+  String? _apiAnahtari;
+  ClaudeModeli _model = ClaudeModeli.opus;
   bool _veriDegisti = false;
   bool _calisiyor = false;
 
@@ -99,9 +105,13 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
 
   Future<void> _yukle() async {
     final deger = await widget.depo.ayarOku(sabahSaatiAyari);
+    final model = await widget.depo.ayarOku(claudeModelAyari);
+    final anahtar = await widget.anahtarDeposu.oku();
     if (!mounted) return;
     setState(() {
       _sabahSaati = int.tryParse(deger ?? '') ?? varsayilanSabahSaati;
+      _model = ClaudeModeli.idden(model);
+      _apiAnahtari = anahtar;
     });
   }
 
@@ -109,6 +119,29 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
     setState(() => _sabahSaati = saat);
     // Değişiklik olayı bildirimleri yeniden kurar (bkz. main.dart).
     await widget.depo.ayarYaz(sabahSaatiAyari, '$saat');
+  }
+
+  Future<void> _modelDegistir(ClaudeModeli model) async {
+    setState(() => _model = model);
+    await widget.depo.ayarYaz(claudeModelAyari, model.id);
+  }
+
+  Future<void> _anahtarDuzenle() async {
+    final sonuc = await showDialog<_AnahtarSonucu>(
+      context: context,
+      builder: (_) => _AnahtarPenceresi(varMi: _apiAnahtari != null),
+    );
+    switch (sonuc) {
+      case null:
+        return;
+      case _AnahtarSil():
+        await widget.anahtarDeposu.sil();
+        _mesaj('API anahtarı silindi');
+      case _AnahtarKaydet(:final anahtar):
+        await widget.anahtarDeposu.yaz(anahtar);
+        _mesaj('API anahtarı kaydedildi');
+    }
+    await _yukle();
   }
 
   void _mesaj(String metin) {
@@ -273,6 +306,39 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
               enabled: !_calisiyor,
               onTap: _iceAktar,
             ),
+            baslik('Claude asistanı'),
+            ListTile(
+              leading: const Icon(Icons.key_outlined),
+              title: const Text('API anahtarı'),
+              subtitle: Text(
+                _apiAnahtari == null
+                    ? 'Girilmedi · console.anthropic.com → API Keys'
+                    : 'Kayıtlı: ${anahtarMaskesi(_apiAnahtari!)}',
+              ),
+              onTap: _anahtarDuzenle,
+            ),
+            ListTile(
+              leading: const Icon(Icons.psychology_outlined),
+              title: const Text('Model'),
+              subtitle: Text(
+                '${_model.aciklama} · girdi \$${_fiyat(_model.girdiFiyati)}, '
+                'çıktı \$${_fiyat(_model.ciktiFiyati)} / milyon token',
+              ),
+              trailing: DropdownButton<ClaudeModeli>(
+                key: const Key('claude_model'),
+                value: _model,
+                items: [
+                  for (final m in ClaudeModeli.hepsi)
+                    DropdownMenuItem(
+                      value: m,
+                      child: Text(m.ad.replaceFirst('Claude ', '')),
+                    ),
+                ],
+                onChanged: (m) {
+                  if (m != null) _modelDegistir(m);
+                },
+              ),
+            ),
             baslik('Hakkında'),
             const ListTile(
               leading: Icon(Icons.info_outline),
@@ -284,6 +350,99 @@ class _AyarlarEkraniState extends State<AyarlarEkrani> {
           ],
         ),
       ),
+    );
+  }
+}
+
+String _fiyat(double d) =>
+    d == d.roundToDouble() ? d.toStringAsFixed(0) : d.toStringAsFixed(2);
+
+sealed class _AnahtarSonucu {}
+
+class _AnahtarKaydet extends _AnahtarSonucu {
+  final String anahtar;
+  _AnahtarKaydet(this.anahtar);
+}
+
+class _AnahtarSil extends _AnahtarSonucu {}
+
+/// API anahtarı giriş penceresi.
+class _AnahtarPenceresi extends StatefulWidget {
+  final bool varMi;
+
+  const _AnahtarPenceresi({required this.varMi});
+
+  @override
+  State<_AnahtarPenceresi> createState() => _AnahtarPenceresiState();
+}
+
+class _AnahtarPenceresiState extends State<_AnahtarPenceresi> {
+  final _alan = TextEditingController();
+  bool _gizli = true;
+  String? _hata;
+
+  @override
+  void dispose() {
+    _alan.dispose();
+    super.dispose();
+  }
+
+  void _kaydet() {
+    final a = _alan.text.trim();
+    if (!a.startsWith('sk-ant-')) {
+      setState(() => _hata = 'Anthropic API anahtarları "sk-ant-" ile başlar.');
+      return;
+    }
+    Navigator.pop(context, _AnahtarKaydet(a));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Claude API anahtarı'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'console.anthropic.com → API Keys bölümünden bir anahtar oluştur '
+            've buraya yapıştır. Anahtar telefonda şifreli saklanır, yedeğe '
+            'girmez ve sadece Anthropic\'e gönderilir. Kullanım ücreti '
+            'Anthropic hesabından düşer (claude.ai aboneliğinden ayrıdır).',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('api_anahtari'),
+            controller: _alan,
+            obscureText: _gizli,
+            autocorrect: false,
+            enableSuggestions: false,
+            decoration: InputDecoration(
+              labelText: 'sk-ant-...',
+              border: const OutlineInputBorder(),
+              errorText: _hata,
+              suffixIcon: IconButton(
+                tooltip: _gizli ? 'Göster' : 'Gizle',
+                icon: Icon(_gizli ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _gizli = !_gizli),
+              ),
+            ),
+            onSubmitted: (_) => _kaydet(),
+          ),
+        ],
+      ),
+      actions: [
+        if (widget.varMi)
+          TextButton(
+            onPressed: () => Navigator.pop(context, _AnahtarSil()),
+            child: const Text('Sil'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Vazgeç'),
+        ),
+        FilledButton(onPressed: _kaydet, child: const Text('Kaydet')),
+      ],
     );
   }
 }
