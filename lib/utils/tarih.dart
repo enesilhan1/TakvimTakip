@@ -57,6 +57,38 @@ const ayAdlari = [
   'Aralık',
 ];
 
+const _kisaGunAdlari = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+/// `Pzt`, `Sal`... (haftalık ve aylık görünüm başlıkları)
+String kisaGunAdi(DateTime gun) => _kisaGunAdlari[gun.weekday - 1];
+
+/// [gun]ün içinde bulunduğu haftanın pazartesisi.
+DateTime haftaBasi(DateTime gun) => gunEkle(gunOf(gun), -(gun.weekday - 1));
+
+/// [gun]ün içinde bulunduğu ayın ilk günü.
+DateTime ayBasi(DateTime gun) => DateTime.utc(gun.year, gun.month, 1);
+
+/// [gun]ün içinde bulunduğu ayın gün sayısı.
+int aydakiGunSayisi(DateTime gun) =>
+    DateTime.utc(gun.year, gun.month + 1, 0).day;
+
+/// Haftanın başlığı: `19–25 Ekim 2026`, ay değişiyorsa `28 Eyl – 4 Eki 2026`,
+/// yıl değişiyorsa `29 Ara 2025 – 4 Oca 2026`.
+String haftaAraligiMetni(DateTime pazartesi) {
+  final pazar = gunEkle(pazartesi, 6);
+  String kisaAy(DateTime g) => ayAdlari[g.month - 1].substring(0, 3);
+  if (pazartesi.month == pazar.month) {
+    return '${pazartesi.day}–${pazar.day} ${ayAdlari[pazar.month - 1]} '
+        '${pazar.year}';
+  }
+  if (pazartesi.year == pazar.year) {
+    return '${pazartesi.day} ${kisaAy(pazartesi)} – ${pazar.day} '
+        '${kisaAy(pazar)} ${pazar.year}';
+  }
+  return '${pazartesi.day} ${kisaAy(pazartesi)} ${pazartesi.year} – '
+      '${pazar.day} ${kisaAy(pazar)} ${pazar.year}';
+}
+
 /// `19 Ekim 2026 Pazartesi`
 String uzunTarih(DateTime gun) =>
     '${gun.day} ${ayAdlari[gun.month - 1]} ${gun.year} ${gunAdi(gun)}';

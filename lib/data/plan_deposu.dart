@@ -124,6 +124,20 @@ class PlanDeposu {
     return satirlar.map(KaymaKaydi.fromMap).toList();
   }
 
+  /// [baslangic] ile [bitis] günleri arasındaki (ikisi dahil) kayma kayıtları.
+  Future<List<KaymaKaydi>> araliktakiKaymaKayitlari(
+    DateTime baslangic,
+    DateTime bitis,
+  ) async {
+    final satirlar = await _db.query(
+      'kayma_kayitlari',
+      where: 'gun >= ? AND gun <= ?',
+      whereArgs: [gunAnahtari(baslangic), gunAnahtari(bitis)],
+      orderBy: 'gun, baslangic_saati',
+    );
+    return satirlar.map(KaymaKaydi.fromMap).toList();
+  }
+
   Future<KaymaKaydi> kaymaKaydiEkle(KaymaKaydi kayit) async {
     final map = kayit.toMap()..remove('id');
     final id = await _db.insert('kayma_kayitlari', map);
