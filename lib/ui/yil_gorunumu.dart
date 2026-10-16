@@ -129,13 +129,16 @@ class _YilGorunumuState extends State<YilGorunumu> {
   }
 }
 
-/// Kutucuk rengi: planı olmayan gün gri, gelecekteki planlı gün çerçeveli,
-/// geçmiş/bugün tamamlanma oranına göre açıktan koyuya yeşil.
+/// Kutucuk rengi: planı olmayan gün gri, hiçbiri yapılmayan gün açık kırmızı,
+/// diğerleri tamamlanma oranına göre açıktan koyuya yeşil. (Gelecekteki
+/// planlı günler renksiz, sadece çerçeveli çizilir.)
 Color? _kutuRengi(BuildContext context, int? seviye) {
   final renk = Theme.of(context).colorScheme;
   if (seviye == null) return renk.surfaceContainerHighest;
-  const opaklik = [0.12, 0.35, 0.55, 0.75, 1.0];
-  return Colors.green.withValues(alpha: opaklik[seviye]);
+  // Planlanıp hiçbiri yapılmayan gün, planı olmayan günle karışmasın.
+  if (seviye == 0) return Colors.red.withValues(alpha: 0.3);
+  const opaklik = [0, 0.3, 0.55, 0.75, 1.0];
+  return Colors.green.withValues(alpha: opaklik[seviye].toDouble());
 }
 
 class _IstatistikKarti extends StatelessWidget {
