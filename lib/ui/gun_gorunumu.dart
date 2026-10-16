@@ -4,6 +4,7 @@ import '../data/plan_deposu.dart';
 import '../models/kayma_kaydi.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
+import 'plan_formu.dart';
 
 /// Tek bir günün 24 saatlik çizelgesi (docs/SPEC.md §6).
 ///
@@ -140,10 +141,30 @@ class _GunGorunumuState extends State<GunGorunumu> {
         },
         child: ListView(
           controller: _kaydirma,
+          padding: const EdgeInsets.only(bottom: 88),
           children: [for (final s in _satirlar()) s],
         ),
       ),
+      floatingActionButton: _gecmis
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Plan ekle',
+              onPressed: () =>
+                  _ekle(_bugunMu ? (DateTime.now().hour + 1).clamp(0, 23) : 9),
+              child: const Icon(Icons.add),
+            ),
     );
+  }
+
+  Future<void> _ekle(int saat) async {
+    final kaydedildi = await planFormuAc(
+      context,
+      depo: widget.depo,
+      bugun: widget.bugun,
+      gun: _gun,
+      saat: saat,
+    );
+    if (kaydedildi) _yukle();
   }
 
   /// 00:00'dan 24:00'e kadar satırları kurar: plan kartları, kayma izleri ve
@@ -176,7 +197,15 @@ class _GunGorunumuState extends State<GunGorunumu> {
         );
         saat += iz.sure;
       } else {
-        satirlar.add(_SaatSatiri(saat: saat, sure: 1));
+        final s = saat;
+        satirlar.add(
+          _SaatSatiri(
+            saat: s,
+            sure: 1,
+            // Boş saate dokununca o saate plan ekle (geçmiş günde kapalı).
+            onTap: _gecmis ? null : () => _ekle(s),
+          ),
+        );
         saat++;
       }
     }
