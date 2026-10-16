@@ -395,6 +395,11 @@ bool? _mantiksal(Map<String, dynamic> m, String alan) {
 DateTime? _gun(Map<String, dynamic> m, String alan, {bool zorunlu = false}) {
   final v = _metin(m, alan, zorunlu: zorunlu);
   if (v == null) return null;
+  return tarihCoz(v, alan);
+}
+
+/// `2026-10-20` biçimindeki metni güne çevirir; değilse [IslemHatasi].
+DateTime tarihCoz(String v, String alan) {
   final eslesme = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(v);
   if (eslesme == null) {
     throw IslemHatasi('"$alan" YYYY-AA-GG biçiminde olmalı ("$v").');
