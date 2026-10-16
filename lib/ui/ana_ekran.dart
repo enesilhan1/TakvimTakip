@@ -4,8 +4,9 @@ import '../data/plan_deposu.dart';
 import 'ay_gorunumu.dart';
 import 'gun_gorunumu.dart';
 import 'hafta_gorunumu.dart';
+import 'yil_gorunumu.dart';
 
-/// Alttaki menüyle görünümler arasında geçiş: Gün / Hafta / Ay.
+/// Alttaki menüyle görünümler arasında geçiş: Gün / Hafta / Ay / Yıl.
 ///
 /// Seçili gün görünümler arasında ortaktır: haftalık ya da aylık görünümde
 /// bir güne dokununca gün görünümü o güne açılır.
@@ -57,6 +58,17 @@ class _AnaEkranState extends State<AnaEkran> {
         onGunDegisti: (g) => _gun = g,
         onGunSec: _guneGit,
       ),
+      3 => YilGorunumu(
+        depo: widget.depo,
+        bugun: widget.bugun,
+        gun: _gun,
+        onGunDegisti: (g) => _gun = g,
+        onGunSec: _guneGit,
+        onAySec: (ay) => setState(() {
+          _gun = ay;
+          _sekme = 2;
+        }),
+      ),
       _ => GunGorunumu(
         key: ValueKey(_gunSurumu),
         depo: widget.depo,
@@ -80,6 +92,7 @@ class _AnaEkranState extends State<AnaEkran> {
           NavigationDestination(icon: Icon(Icons.view_day), label: 'Gün'),
           NavigationDestination(icon: Icon(Icons.view_week), label: 'Hafta'),
           NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Ay'),
+          NavigationDestination(icon: Icon(Icons.grid_view), label: 'Yıl'),
         ],
       ),
     );
