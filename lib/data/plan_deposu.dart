@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sqflite/sqflite.dart';
 
 import '../logic/kaydirma_motoru.dart';
@@ -25,6 +27,12 @@ class PlanDeposu {
   final Database _db;
 
   PlanDeposu(this._db);
+
+  final _degisiklik = StreamController<void>.broadcast();
+
+  /// Planlar her eklendiğinde, değiştiğinde, silindiğinde ya da kaydığında
+  /// bir olay yayar (bildirimler yeniden kurulsun diye).
+  Stream<void> get degisiklikler => _degisiklik.stream;
 
   // ---------------------------------------------------------------- planlar
 
@@ -84,6 +92,7 @@ class PlanDeposu {
     await _cakismaKontrol(plan);
     final map = plan.toMap()..remove('id');
     final id = await _db.insert('planlar', map);
+    _degisiklik.add(null);
     return plan.copyWith(id: id);
   }
 
@@ -99,6 +108,7 @@ class PlanDeposu {
       where: 'id = ?',
       whereArgs: [id],
     );
+    _degisiklik.add(null);
   }
 
   Future<void> durumDegistir(int id, PlanDurumu durum) async {
@@ -108,10 +118,12 @@ class PlanDeposu {
       where: 'id = ?',
       whereArgs: [id],
     );
+    _degisiklik.add(null);
   }
 
   Future<void> sil(int id) async {
     await _db.delete('planlar', where: 'id = ?', whereArgs: [id]);
+    _degisiklik.add(null);
   }
 
   Future<void> _cakismaKontrol(Plan plan) async {
@@ -170,7 +182,13 @@ class PlanDeposu {
   Future<KaydirmaSonucu?> gunuKapatIslemi(
     DateTime gun, {
     required String sonGunAyari,
-  }) {
+  }) async {
+    final sonuc = await _gunuKapat(gun, sonGunAyari);
+    if (sonuc != null && !sonuc.bos) _degisiklik.add(null);
+    return sonuc;
+  }
+
+  Future<KaydirmaSonucu?> _gunuKapat(DateTime gun, String sonGunAyari) {
     return _db.transaction((txn) async {
       final kayitli = await txn.query(
         'ayarlar',

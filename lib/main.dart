@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/plan_deposu.dart';
 import 'data/veritabani.dart';
 import 'logic/kaydirma_servisi.dart';
+import 'platform/bildirim_servisi.dart';
+import 'platform/gece_gorevi.dart';
 import 'ui/ana_ekran.dart';
 import 'utils/tarih.dart';
 
@@ -16,7 +19,26 @@ Future<void> main() async {
   // Açılışta kapanmış ama işlenmemiş günleri kaydır (SPEC §5).
   await KaydirmaServisi(depo).bekleyenGunleriIsle(DateTime.now());
 
-  runApp(TakvimTakipApp(depo: depo));
+  runApp(
+    TakvimTakipApp(
+      depo: depo,
+      bildirimleriYenile: () => BildirimServisi.yenidenKur(depo),
+    ),
+  );
+  unawaited(_arkaPlaniHazirla(depo));
+}
+
+/// Bildirim izni, bugünün bildirimleri ve gece yarısı görevi. Arayüz açıldıktan
+/// sonra çalışır ki izin penceresi uygulamanın üstünde görünsün.
+Future<void> _arkaPlaniHazirla(PlanDeposu depo) async {
+  try {
+    await BildirimServisi.izinIste();
+    await BildirimServisi.yenidenKur(depo);
+    await AndroidAlarmManager.initialize();
+    await geceAlarminiKur();
+  } catch (e) {
+    debugPrint('Takvim Takip: arka plan hazırlığı başarısız: $e');
+  }
 }
 
 class TakvimTakipApp extends StatefulWidget {
@@ -30,12 +52,17 @@ class TakvimTakipApp extends StatefulWidget {
   /// Testlerde saati ilerletmek için (verilmezse telefonun saati).
   final DateTime Function()? simdiOverride;
 
+  /// Planlar değişince ya da gün kapanınca bildirimleri yeniden kurar.
+  /// Testlerde verilmez (bildirim eklentisi yok).
+  final Future<void> Function()? bildirimleriYenile;
+
   const TakvimTakipApp({
     super.key,
     required this.depo,
     this.bugunOverride,
     this.saatOverride,
     this.simdiOverride,
+    this.bildirimleriYenile,
   });
 
   @override
@@ -53,6 +80,8 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
   int _surum = 0;
 
   Timer? _geceYarisi;
+  StreamSubscription<void>? _degisiklikAboneligi;
+  Timer? _bildirimGecikmesi;
 
   bool get _canli => widget.bugunOverride == null;
 
@@ -65,12 +94,19 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
       WidgetsBinding.instance.addObserver(this);
       _geceYarisiniKur();
     }
+    if (widget.bildirimleriYenile != null) {
+      _degisiklikAboneligi = widget.depo.degisiklikler.listen(
+        (_) => _bildirimleriYenile(),
+      );
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _geceYarisi?.cancel();
+    _degisiklikAboneligi?.cancel();
+    _bildirimGecikmesi?.cancel();
     super.dispose();
   }
 
@@ -103,12 +139,29 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
     ).bekleyenGunleriIsle(simdi);
     if (!mounted) return;
     final yeniBugun = gunOf(simdi);
+    // Gün değiştiyse bugünün sabah özeti ve hatırlatıcıları kurulmalı.
+    if (yeniBugun != _bugun) _bildirimleriYenile();
     if (yeniBugun != _bugun || sonuclar.isNotEmpty) {
       setState(() {
         _bugun = yeniBugun;
         _surum++;
       });
     }
+  }
+
+  /// Art arda gelen değişiklikleri (ör. kaydırmada onlarca plan) tek bir
+  /// yeniden kurulumda toplar.
+  void _bildirimleriYenile() {
+    final yenile = widget.bildirimleriYenile;
+    if (yenile == null) return;
+    _bildirimGecikmesi?.cancel();
+    _bildirimGecikmesi = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        await yenile();
+      } catch (e) {
+        debugPrint('Takvim Takip: bildirimler kurulamadı: $e');
+      }
+    });
   }
 
   @override

@@ -115,6 +115,12 @@ plan da sabit gibi davranır: banda girmez, yeri değişmez.
 ## 5. Kaçırılan günler
 
 Android uygulamayı arka planda durdurabilir ya da telefon kapalı olabilir.
+Kaydırma her gece **00:00:30**'da, uygulama kapalı olsa bile Android'in tam
+zamanlı alarmıyla çalışan bir arka plan görevinde yapılır; ardından bugünün
+bildirimleri kurulur. Ayrıca uygulama açılınca, arka plandan dönünce ve açıkken
+gece yarısı geçince de aynı kontrol yapılır. Hepsi tek bir özel veritabanı
+işleminde yapıldığı için aynı anda çalışsalar bile gün bir kez kaydırılır.
+
 Uygulama her açılışta (ve arka plan görevinde) **en son işlenen günü** kontrol
 eder. Eksik günleri **eskiden yeniye sırayla** işler. Sonuç, kaydırma her gün
 zamanında çalışmış gibi olur.

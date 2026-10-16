@@ -21,6 +21,11 @@ class PlanlanmisBildirim {
   String toString() => 'Bildirim($id, $zaman, $baslik, $govde)';
 }
 
+/// Sabah bildirimi saatinin ayar anahtarı (Aşama 7'de ayarlar ekranından
+/// değiştirilebilecek).
+const sabahSaatiAyari = 'sabah_saati';
+const varsayilanSabahSaati = 9;
+
 /// Sabah özetinin sabit kimliği.
 const sabahBildirimiId = 1;
 

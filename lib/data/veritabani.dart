@@ -10,20 +10,33 @@ class Veritabani {
   static const dosyaAdi = 'takvim_takip.db';
 
   /// Telefondaki veritabanını açar (yoksa oluşturur).
-  static Future<Database> ac() async {
+  ///
+  /// [ayriBaglanti]: arka plan görevi (gece yarısı kaydırması) uygulamayla
+  /// aynı bağlantıyı paylaşmasın diye kendi bağlantısını açar; aynı anda
+  /// çalışırlarsa SQLite kilidi işlemleri sıraya koyar.
+  static Future<Database> ac({bool ayriBaglanti = false}) async {
     final klasor = await getDatabasesPath();
-    return acFactory(databaseFactory, p.join(klasor, dosyaAdi));
+    return acFactory(
+      databaseFactory,
+      p.join(klasor, dosyaAdi),
+      tekOrnek: !ayriBaglanti,
+    );
   }
 
   /// Belirli bir factory ve yol ile açar. Testlerde bellek içi veritabanı
   /// için kullanılır.
-  static Future<Database> acFactory(DatabaseFactory factory, String yol) {
+  static Future<Database> acFactory(
+    DatabaseFactory factory,
+    String yol, {
+    bool tekOrnek = true,
+  }) {
     return factory.openDatabase(
       yol,
       options: OpenDatabaseOptions(
         version: surum,
         onCreate: _olustur,
         onUpgrade: _yukselt,
+        singleInstance: tekOrnek,
       ),
     );
   }
