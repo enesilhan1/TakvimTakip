@@ -54,6 +54,18 @@ Map<String, Object?> arac(String ad, Map<String, Object?> girdi) => {
   'input': girdi,
 };
 
+/// Claude'un öneri kartı çıkana kadar bekler (veritabanı işlemleri gerçek
+/// zamanda sürdüğü için sabit sayıda olay döngüsü yetmeyebilir).
+Future<DegisiklikOnerisi> oneriBekle(ClaudeSohbeti s) async {
+  final son = DateTime.now().add(const Duration(seconds: 10));
+  while (DateTime.now().isBefore(son)) {
+    final o = s.ogeler.whereType<DegisiklikOnerisi>();
+    if (o.isNotEmpty) return o.single;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+  throw StateError('Öneri kartı çıkmadı');
+}
+
 void main() {
   sqfliteFfiInit();
 
@@ -213,8 +225,7 @@ void main() {
       final is_ = s.gonder('Dersi akşama al');
 
       // Claude öneriyi yaptı, kullanıcının onayı bekleniyor
-      await pumpEventQueue();
-      final oneri = s.ogeler.whereType<DegisiklikOnerisi>().single;
+      final oneri = await oneriBekle(s);
       expect(oneri.durum, OneriDurumu.bekliyor);
       expect(
         oneri.plan.onizleme.single,
@@ -260,8 +271,7 @@ void main() {
       ]);
       final s = sohbet(api);
       final is_ = s.gonder('Dersi sil');
-      await pumpEventQueue();
-      s.karar(s.ogeler.whereType<DegisiklikOnerisi>().single, false);
+      s.karar(await oneriBekle(s), false);
       await is_;
 
       expect(await depo.planGetir(ders.id!), isNotNull);
