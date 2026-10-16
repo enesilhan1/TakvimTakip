@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/plan_deposu.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
+import 'ayarlar_ekrani.dart';
 import 'plan_formu.dart';
 import 'plan_islemleri.dart';
 
@@ -125,6 +126,7 @@ class _HaftaGorunumuState extends State<HaftaGorunumu> {
             icon: const Icon(Icons.chevron_right),
             onPressed: () => _haftaDegistir(gunEkle(_pazartesi, 7)),
           ),
+          AyarlarButonu(depo: widget.depo, onVeriDegisti: _yukle),
         ],
       ),
       body: Column(

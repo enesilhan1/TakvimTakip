@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/plan_deposu.dart';
 import '../logic/gun_ozeti.dart';
 import '../utils/tarih.dart';
+import 'ayarlar_ekrani.dart';
 
 /// Aylık takvim ızgarası (docs/SPEC.md §6).
 ///
@@ -101,6 +102,7 @@ class _AyGorunumuState extends State<AyGorunumu> {
             icon: const Icon(Icons.chevron_right),
             onPressed: () => _ayDegistir(1),
           ),
+          AyarlarButonu(depo: widget.depo, onVeriDegisti: _yukle),
         ],
       ),
       body: Padding(

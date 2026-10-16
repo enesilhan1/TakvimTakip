@@ -4,6 +4,7 @@ import '../data/plan_deposu.dart';
 import '../models/kayma_kaydi.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
+import 'ayarlar_ekrani.dart';
 import 'plan_formu.dart';
 import 'plan_islemleri.dart';
 
@@ -143,6 +144,7 @@ class _GunGorunumuState extends State<GunGorunumu> {
             icon: const Icon(Icons.chevron_right),
             onPressed: () => _gunDegistir(gunEkle(_gun, 1)),
           ),
+          AyarlarButonu(depo: widget.depo, onVeriDegisti: _yukle),
         ],
       ),
       body: GestureDetector(

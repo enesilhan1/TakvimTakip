@@ -5,6 +5,7 @@ import '../logic/gun_ozeti.dart';
 import '../logic/istatistik.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
+import 'ayarlar_ekrani.dart';
 
 /// Yıllık görünüm (docs/SPEC.md §6): GitHub katkı grafiği gibi renkli
 /// kutucuklar ve yılın istatistikleri.
@@ -92,6 +93,7 @@ class _YilGorunumuState extends State<YilGorunumu> {
             icon: const Icon(Icons.chevron_right),
             onPressed: () => _yilDegistir(_yil + 1),
           ),
+          AyarlarButonu(depo: widget.depo, onVeriDegisti: _yukle),
         ],
       ),
       body: ListView(
