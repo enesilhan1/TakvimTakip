@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/plan_deposu.dart';
+import '../platform/widget_servisi.dart';
 import 'ay_gorunumu.dart';
 import 'gun_gorunumu.dart';
 import 'hafta_gorunumu.dart';
@@ -17,11 +18,15 @@ class AnaEkran extends StatefulWidget {
   final DateTime bugun;
   final int Function()? simdiSaat;
 
+  /// Ana ekran widget'ına dokununca ilgili görünüme geçmek için.
+  final WidgetHedefi? widgetHedefi;
+
   const AnaEkran({
     super.key,
     required this.depo,
     required this.bugun,
     this.simdiSaat,
+    this.widgetHedefi,
   });
 
   @override
@@ -34,6 +39,36 @@ class _AnaEkranState extends State<AnaEkran> {
 
   /// Gün görünümünü dışarıdan başka bir güne açmak için yeniden kurar.
   int _gunSurumu = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _hedefiUygula(widget.widgetHedefi?.al());
+    widget.widgetHedefi?.addListener(_widgettenAc);
+  }
+
+  @override
+  void dispose() {
+    widget.widgetHedefi?.removeListener(_widgettenAc);
+    super.dispose();
+  }
+
+  /// Günlük widget bugünü, haftalık bu haftayı, aylık bu ayı açar.
+  void _widgettenAc() =>
+      setState(() => _hedefiUygula(widget.widgetHedefi?.al()));
+
+  void _hedefiUygula(String? hedef) {
+    final sekme = switch (hedef) {
+      'gun' => 0,
+      'hafta' => 1,
+      'ay' => 2,
+      _ => null,
+    };
+    if (sekme == null) return;
+    _gun = widget.bugun;
+    _sekme = sekme;
+    _gunSurumu++;
+  }
 
   void _guneGit(DateTime gun) {
     setState(() {

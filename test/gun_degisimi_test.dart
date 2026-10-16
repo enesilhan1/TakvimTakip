@@ -6,6 +6,7 @@ import 'package:takvim_takip/data/veritabani.dart';
 import 'package:takvim_takip/logic/kaydirma_servisi.dart';
 import 'package:takvim_takip/main.dart';
 import 'package:takvim_takip/models/plan.dart';
+import 'package:takvim_takip/platform/widget_servisi.dart';
 import 'package:takvim_takip/utils/tarih.dart';
 
 /// Uygulama açıkken gün değişimi (gece yarısı ve arka plandan dönüş).
@@ -81,6 +82,60 @@ void main() {
     expect(find.text('Bugün · Salı'), findsOneWidget);
     expect(await depo.gununPlanlari(sali), hasLength(1));
 
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('widget butonuyla dışarıda yapılan değişiklik dönünce görünür', (
+    tester,
+  ) async {
+    final simdi = DateTime(2026, 10, 19, 10);
+    await tester.pumpWidget(
+      TakvimTakipApp(depo: depo, simdiOverride: () => simdi),
+    );
+    await bekle(tester);
+
+    // Arka plan geri çağrısı kendi bağlantısıyla yazar; bu depo nesnesinin
+    // değişiklik akışı tetiklenmez.
+    final disDepo = PlanDeposu(db);
+    await tester.runAsync(() async {
+      await disDepo.ekle(
+        Plan(baslik: 'Dışarıdan', gun: pzt, baslangicSaati: 11),
+      );
+      await disDepo.ayarYaz(
+        WidgetServisi.disDegisiklikAyari,
+        simdi.toIso8601String(),
+      );
+    });
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await bekle(tester);
+
+    expect(find.text('Dışarıdan'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('widget dokunuşu ilgili sekmeyi açar', (tester) async {
+    final hedef = WidgetHedefi()..git('ay');
+    await tester.pumpWidget(
+      TakvimTakipApp(
+        depo: depo,
+        simdiOverride: () => DateTime(2026, 10, 19, 10),
+        widgetHedefi: hedef,
+      ),
+    );
+    await bekle(tester);
+    int sekme() =>
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+    expect(sekme(), 2);
+
+    hedef.git('hafta');
+    await bekle(tester);
+    expect(sekme(), 1);
+
+    hedef.git('gun');
+    await bekle(tester);
+    expect(sekme(), 0);
+    expect(find.text('Bugün · Pazartesi'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
 }

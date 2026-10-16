@@ -9,6 +9,7 @@ import 'data/veritabani.dart';
 import 'logic/kaydirma_servisi.dart';
 import 'platform/bildirim_servisi.dart';
 import 'platform/gece_gorevi.dart';
+import 'platform/widget_servisi.dart';
 import 'ui/ana_ekran.dart';
 import 'utils/tarih.dart';
 
@@ -22,13 +23,18 @@ Future<void> main() async {
   runApp(
     TakvimTakipApp(
       depo: depo,
-      bildirimleriYenile: () => BildirimServisi.yenidenKur(depo),
+      bildirimleriYenile: () async {
+        await BildirimServisi.yenidenKur(depo);
+        await WidgetServisi.guncelle(depo);
+      },
+      widgetHedefi: WidgetServisi.hedef,
     ),
   );
   unawaited(_arkaPlaniHazirla(depo));
 }
 
-/// Bildirim izni, bugünün bildirimleri ve gece yarısı görevi. Arayüz açıldıktan
+/// Bildirim izni, bugünün bildirimleri, gece yarısı görevi ve ana ekran
+/// widget'ları. Arayüz açıldıktan
 /// sonra çalışır ki izin penceresi uygulamanın üstünde görünsün.
 Future<void> _arkaPlaniHazirla(PlanDeposu depo) async {
   try {
@@ -38,6 +44,12 @@ Future<void> _arkaPlaniHazirla(PlanDeposu depo) async {
     await geceAlarminiKur();
   } catch (e) {
     debugPrint('Takvim Takip: arka plan hazırlığı başarısız: $e');
+  }
+  try {
+    await WidgetServisi.hazirla();
+    await WidgetServisi.guncelle(depo);
+  } catch (e) {
+    debugPrint('Takvim Takip: widget hazırlığı başarısız: $e');
   }
 }
 
@@ -56,6 +68,9 @@ class TakvimTakipApp extends StatefulWidget {
   /// Testlerde verilmez (bildirim eklentisi yok).
   final Future<void> Function()? bildirimleriYenile;
 
+  /// Ana ekran widget'ına dokununca açılacak görünüm.
+  final WidgetHedefi? widgetHedefi;
+
   const TakvimTakipApp({
     super.key,
     required this.depo,
@@ -63,6 +78,7 @@ class TakvimTakipApp extends StatefulWidget {
     this.saatOverride,
     this.simdiOverride,
     this.bildirimleriYenile,
+    this.widgetHedefi,
   });
 
   @override
@@ -93,6 +109,9 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
     if (_canli) {
       WidgetsBinding.instance.addObserver(this);
       _geceYarisiniKur();
+      widget.depo
+          .ayarOku(WidgetServisi.disDegisiklikAyari)
+          .then((v) => _sonDisDegisiklik ??= v ?? '');
     }
     if (widget.bildirimleriYenile != null) {
       _degisiklikAboneligi = widget.depo.degisiklikler.listen(
@@ -132,8 +151,15 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
     );
   }
 
+  /// Widget'taki "✓ Yapıldı" butonu planı uygulama dışında değiştirir;
+  /// geri dönünce görünümler yeniden yüklensin.
+  String? _sonDisDegisiklik;
+
   Future<void> _tazele() async {
     final simdi = _simdi();
+    final dis = await widget.depo.ayarOku(WidgetServisi.disDegisiklikAyari);
+    final disDegisti = _sonDisDegisiklik != null && dis != _sonDisDegisiklik;
+    _sonDisDegisiklik = dis ?? '';
     final sonuclar = await KaydirmaServisi(
       widget.depo,
     ).bekleyenGunleriIsle(simdi);
@@ -141,7 +167,7 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
     final yeniBugun = gunOf(simdi);
     // Gün değiştiyse bugünün sabah özeti ve hatırlatıcıları kurulmalı.
     if (yeniBugun != _bugun) _bildirimleriYenile();
-    if (yeniBugun != _bugun || sonuclar.isNotEmpty) {
+    if (yeniBugun != _bugun || sonuclar.isNotEmpty || disDegisti) {
       setState(() {
         _bugun = yeniBugun;
         _surum++;
@@ -186,6 +212,7 @@ class _TakvimTakipAppState extends State<TakvimTakipApp>
         depo: widget.depo,
         bugun: _bugun,
         simdiSaat: widget.saatOverride ?? () => _simdi().hour,
+        widgetHedefi: widget.widgetHedefi,
       ),
     );
   }

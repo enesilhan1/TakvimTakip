@@ -5,11 +5,13 @@ import '../data/plan_deposu.dart';
 import '../data/veritabani.dart';
 import '../logic/kaydirma_servisi.dart';
 import 'bildirim_servisi.dart';
+import 'widget_servisi.dart';
 
 const _geceAlarmiId = 2300;
 
 /// Her gece 00:00:30'da, uygulama kapalı olsa bile çalışan görev
-/// (docs/SPEC.md §4–§5): dünü kaydırır, bugünün bildirimlerini kurar ve
+/// (docs/SPEC.md §4–§5): dünü kaydırır, bugünün bildirimlerini ve
+/// widget'ları kurar ve
 /// bir sonraki geceyi kurar.
 ///
 /// Android bu fonksiyonu uygulamadan bağımsız bir arka plan ortamında
@@ -23,6 +25,7 @@ Future<void> geceGorevi() async {
     final depo = PlanDeposu(await Veritabani.ac(ayriBaglanti: true));
     await KaydirmaServisi(depo).bekleyenGunleriIsle(DateTime.now());
     await BildirimServisi.yenidenKur(depo);
+    await WidgetServisi.guncelle(depo);
   } catch (e) {
     // Bir şey ters giderse kaydırma uygulama açılınca yapılır (SPEC §5).
     debugPrint('Takvim Takip gece görevi hatası: $e');
