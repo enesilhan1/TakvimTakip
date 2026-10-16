@@ -414,6 +414,7 @@ class _AnahtarPenceresiState extends State<_AnahtarPenceresi> {
           TextField(
             key: const Key('api_anahtari'),
             controller: _alan,
+            autofocus: true,
             obscureText: _gizli,
             autocorrect: false,
             enableSuggestions: false,

@@ -158,6 +158,24 @@ Ayarlar ekranında JSON dosyasına **dışa aktar** / dosyadan **içe aktar**.
 - Sohbet sırasında ilgili planlar Anthropic'e gönderilir; başka hiçbir veri
   telefondan çıkmaz.
 
+### Nasıl çalışıyor
+- Alt menüde **Asistan** sekmesi. Model ayarlardan seçilir: Claude Opus 5.5
+  (varsayılan), Sonnet 5.5, Haiku 5.5. API anahtarı Android Keystore ile
+  şifreli saklanır; veritabanına ve JSON yedeğine girmez.
+- Her mesajda Claude'a şu anki tarih/saat ve önümüzdeki 14 günün planları
+  (kimlikleriyle) gönderilir.
+- Claude'un iki aracı var:
+  - `planlari_listele(baslangic, bitis)`: daha uzak tarihleri okur;
+    onaysız çalışır, hiçbir şeyi değiştirmez.
+  - `degisiklik_oner(aciklama, islemler)`: ekle / guncelle / sil / durum
+    işlemleri. Uygulama önce bu dokümandaki kurallarla doğrular (geçmiş
+    gün, çakışma, olmayan plan); geçersizse hiçbir şey değişmez ve hata
+    Claude'a döner. Geçerliyse önizleme kartı çıkar; **Onayla** ile hepsi
+    tek seferde uygulanır, **Reddet** ile hiçbiri.
+- Claude onay gelmeden değişikliği yaptığını söylemez; reddedilirse ne
+  istendiğini sorar. Kodlama gibi konu dışı istekleri geri çevirir.
+- Ekranda sohbetin yaklaşık maliyeti gösterilir.
+
 ## 10. Yol haritası
 
 | Aşama | İçerik |
