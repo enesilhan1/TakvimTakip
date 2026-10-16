@@ -89,3 +89,7 @@ Sürüm APK'sı `android/takvim_takip.jks` anahtarıyla imzalanır; şifreler
 - Projeyi kendin derliyorsan bu dosyalar olmadan debug anahtarıyla
   imzalanır; o APK, Releases'teki sürümün üstüne kurulmaz (önce kaldırman
   gerekir).
+
+## Lisans
+
+[MIT](LICENSE) © 2026 Enes İlhan
