@@ -21,8 +21,10 @@ plan saatine kaydıran** kişisel Android uygulaması.
 - **Bildirimler:** Sabah özeti ("Dün 1 plan yapılmadı, 4 plan kaydı…") ve her
   plandan 5 dakika önce hatırlatıcı. Uygulama kapalıyken de çalışır.
 - **Yedekleme:** Tek dosyaya dışa aktar / geri yükle.
-- **Claude asistanı (isteğe bağlı):** "Yarın 18:00'e spor ekle" de; Claude
-  önizleme gösterir, sen onaylarsın. Kendi Anthropic API anahtarınla.
+- **Yapay zekâ asistanı (isteğe bağlı):** "Yarın 18:00'e spor ekle" de;
+  asistan önizleme gösterir, sen onaylarsın. **Claude, ChatGPT, Gemini ya da
+  DeepSeek**'ten birini seç; kendi API anahtarınla (Gemini'nin ücretsiz kotası
+  var).
 - İnternet hesabı yok, reklam yok; veriler telefonda. Türkçe.
 
 <p>
@@ -39,7 +41,7 @@ plan saatine kaydıran** kişisel Android uygulaması.
    (Play Protect uyarısında *Yine de yükle*).
 3. İlk açılışta **bildirim iznine** izin ver.
 
-Adım adım anlatım, Claude asistanının kurulumu ve ücretlendirmesi, yedekleme
+Adım adım anlatım, yapay zekâ asistanının kurulumu ve ücretlendirmesi, yedekleme
 ve sorun giderme: **[docs/KURULUM.md](docs/KURULUM.md)**
 
 ## Nasıl çalışır
@@ -76,7 +78,7 @@ Kod yapısı:
 | `lib/data/` | SQLite şeması ve `PlanDeposu` |
 | `lib/ui/` | Ekranlar |
 | `lib/platform/` | Bildirimler ve gece yarısı arka plan görevi |
-| `lib/claude/` | Claude API istemcisi ve sohbet döngüsü |
+| `lib/asistan/` | Yapay zekâ asistanı: sağlayıcı bağlayıcıları (Claude, OpenAI, Gemini, DeepSeek) ve sohbet döngüsü |
 | `test/` | Birim ve widget testleri |
 
 ### Sürüm imzası

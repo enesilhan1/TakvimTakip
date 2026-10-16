@@ -147,32 +147,40 @@ zamanında çalışmış gibi olur.
 
 Ayarlar ekranında JSON dosyasına **dışa aktar** / dosyadan **içe aktar**.
 
-## 9. Claude entegrasyonu (Aşama 9)
+## 9. Yapay zekâ asistanı (Aşama 9)
 
-- Uygulama içinde sohbet: "yarınki dersi 18:00'e al" gibi komutlarla Claude
-  planları düzenler.
-- Kullanıcı kendi Claude API anahtarını ayarlara girer (kullanım başına
-  ücretlendirilir, claude.ai aboneliğinden ayrıdır).
-- Claude değişiklikleri **önce önizleme** olarak gösterir, kullanıcı onaylarsa
+- Uygulama içinde sohbet: "yarınki dersi 18:00'e al" gibi komutlarla yapay zekâ
+  asistanı planları düzenler.
+- Kullanıcı seçtiği sağlayıcının kendi API anahtarını ayarlara girer (kullanım
+  başına ücretlendirilir, ChatGPT Plus / Claude Pro gibi aboneliklerden
+  ayrıdır; Gemini'nin ücretsiz kotası var).
+- Asistan değişiklikleri **önce önizleme** olarak gösterir, kullanıcı onaylarsa
   uygulanır.
-- Sohbet sırasında ilgili planlar Anthropic'e gönderilir; başka hiçbir veri
+- Sohbet sırasında ilgili planlar seçilen sağlayıcıya gönderilir; başka hiçbir veri
   telefondan çıkmaz.
 
 ### Nasıl çalışıyor
-- Alt menüde **Asistan** sekmesi. Model ayarlardan seçilir: Claude Opus 5.5
-  (varsayılan), Sonnet 5.5, Haiku 5.5. API anahtarı Android Keystore ile
+- Alt menüde **Asistan** sekmesi. Ayarlardan yapay zekâ seçilir: **Claude**
+  (varsayılan), **ChatGPT** (OpenAI), **Gemini** (Google) ya da **DeepSeek**.
+  Her birinin hazır model listesi var; "Diğer…" ile model adı elle de
+  yazılabilir. Her sağlayıcının API anahtarı ayrı ayrı Android Keystore ile
   şifreli saklanır; veritabanına ve JSON yedeğine girmez.
-- Her mesajda Claude'a şu anki tarih/saat ve önümüzdeki 14 günün planları
+- Bağlayıcılar (lib/asistan/): Anthropic Messages API, OpenAI Responses API,
+  Gemini generateContent, DeepSeek chat/completions. Hepsinde konuşma geçmişi
+  sağlayıcının kendi biçiminde, değiştirilmeden yalnızca sonuna eklenerek
+  gönderilir (düşünme blokları, şifreli düşünme öğeleri, reasoning_content,
+  thoughtSignature dahil; bazı sağlayıcılar bunu zorunlu tutuyor).
+- Her mesajda asistana şu anki tarih/saat ve önümüzdeki 14 günün planları
   (kimlikleriyle) gönderilir.
-- Claude'un iki aracı var:
+- Asistanın iki aracı var:
   - `planlari_listele(baslangic, bitis)`: daha uzak tarihleri okur;
     onaysız çalışır, hiçbir şeyi değiştirmez.
   - `degisiklik_oner(aciklama, islemler)`: ekle / guncelle / sil / durum
     işlemleri. Uygulama önce bu dokümandaki kurallarla doğrular (geçmiş
     gün, çakışma, olmayan plan); geçersizse hiçbir şey değişmez ve hata
-    Claude'a döner. Geçerliyse önizleme kartı çıkar; **Onayla** ile hepsi
+    asistana döner. Geçerliyse önizleme kartı çıkar; **Onayla** ile hepsi
     tek seferde uygulanır, **Reddet** ile hiçbiri.
-- Claude onay gelmeden değişikliği yaptığını söylemez; reddedilirse ne
+- Asistan onay gelmeden değişikliği yaptığını söylemez; reddedilirse ne
   istendiğini sorar. Kodlama gibi konu dışı istekleri geri çevirir.
 - Ekranda sohbetin yaklaşık maliyeti gösterilir.
 
@@ -189,4 +197,4 @@ Ayarlar ekranında JSON dosyasına **dışa aktar** / dosyadan **içe aktar**.
 | 6 | 23:59 otomatik kaydırma (arka plan) + kaçırılan günler + bildirimler |
 | 7 | Yedekleme (JSON) + ayarlar |
 | 8 | APK derleme, telefona kurulum |
-| 9 | Claude entegrasyonu |
+| 9 | Yapay zekâ asistanı (Claude, ChatGPT, Gemini, DeepSeek) |

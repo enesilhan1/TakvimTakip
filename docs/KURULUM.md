@@ -7,7 +7,7 @@ Bilgisayara, geliştirici araçlarına ya da hesap açmaya gerek yok.
 - [1. APK dosyasını indir](#1-apk-dosyasını-indir)
 - [2. Telefona kur](#2-telefona-kur)
 - [3. İlk açılış](#3-ilk-açılış)
-- [4. (İsteğe bağlı) Claude asistanını bağla](#4-isteğe-bağlı-claude-asistanını-bağla)
+- [4. (İsteğe bağlı) Yapay zekâ asistanını bağla](#4-isteğe-bağlı-yapay-zekâ-asistanını-bağla)
 - [Güncelleme](#güncelleme)
 - [Yedekleme ve telefon değiştirme](#yedekleme-ve-telefon-değiştirme)
 - [Sorun giderme](#sorun-giderme)
@@ -21,7 +21,7 @@ Bilgisayara, geliştirici araçlarına ya da hesap açmaya gerek yok.
 |---|---|
 | Telefon | Android 7.0 veya üstü |
 | Yer | ~60 MB |
-| İnternet | Gerekmez (yalnızca isteğe bağlı Claude asistanı için) |
+| İnternet | Gerekmez (yalnızca isteğe bağlı yapay zekâ asistanı için) |
 | iPhone | Şu an desteklenmiyor |
 
 ## 1. APK dosyasını indir
@@ -69,40 +69,61 @@ Bilgisayara, geliştirici araçlarına ya da hesap açmaya gerek yok.
 
 Ayrıntılı kurallar: [docs/SPEC.md](SPEC.md)
 
-## 4. (İsteğe bağlı) Claude asistanını bağla
+## 4. (İsteğe bağlı) Yapay zekâ asistanını bağla
 
 **Asistan** sekmesinde planlarını yazarak düzenletebilirsin:
 *"Yarın 18:00'e 1 saatlik spor ekle"*, *"Bugünkü dersi cumartesiye al"*.
-Claude önce bir **önizleme** gösterir; sen **Onayla** demeden hiçbir plan
+Asistan önce bir **önizleme** gösterir; sen **Onayla** demeden hiçbir plan
 değişmez.
 
-Bunun için kendi Anthropic API anahtarın gerekir:
+Dört yapay zekâdan birini seçebilirsin. Hangisini kullanacaksan onun
+**kendi API anahtarı** gerekir:
 
-1. [console.anthropic.com](https://console.anthropic.com) adresinde hesap aç
-   ya da giriş yap.
-2. **Billing** bölümünden kredi yükle (ör. 5 $).
-3. **API Keys → Create Key** ile bir anahtar oluştur ve kopyala
-   (`sk-ant-` ile başlar).
-4. Uygulamada **Asistan → Ayarlara git** → **API anahtarı** → yapıştır →
-   **Kaydet**.
+| Yapay zekâ | Anahtarı nereden alırsın | Not |
+|---|---|---|
+| **Claude** (Anthropic) | [console.anthropic.com](https://console.anthropic.com) → API Keys | Varsayılan. Billing'den kredi yükle. |
+| **ChatGPT** (OpenAI) | [platform.openai.com](https://platform.openai.com) → API keys | Billing'den kredi yükle. |
+| **Gemini** (Google) | [aistudio.google.com](https://aistudio.google.com) → Get API key | **Ücretsiz kotası var** (dakikalık/günlük sınırlı). |
+| **DeepSeek** | [platform.deepseek.com](https://platform.deepseek.com) → API keys | Çok ucuz. Top up'tan bakiye yükle. |
+
+1. Seçtiğin sağlayıcıda hesap aç, gerekiyorsa kredi yükle ve bir API
+   anahtarı oluşturup kopyala.
+2. Uygulamada ⚙ *Ayarlar → Asistan* → **Yapay zekâ**'dan sağlayıcıyı seç.
+3. **… API anahtarı** satırına dokun → yapıştır → **Kaydet**.
+4. İstersen **Model**'den başka bir model seç. Listede olmayan yeni bir
+   model için **Diğer…** ile adını elle yazabilirsin (fiyatı bilinmediği için
+   o zaman maliyet gösterilmez).
+
+Her sağlayıcının anahtarı ayrı saklanır; aralarında geçiş yapınca
+anahtarların silinmez.
 
 ### Ücretlendirme hakkında
 
-- API kullanımı **claude.ai aboneliğinden (Pro/Max) ayrıdır** ve aboneliğe
-  dahil değildir. Console hesabına yüklediğin ön ödemeli krediden düşer.
-- Kredi bitince istekler durur; kendiliğinden fazla ücret çekilmez.
-  Console → Billing'den aylık harcama sınırı da koyabilirsin.
-- Model *Ayarlar → Model*'den seçilir:
+- API kullanımı **ChatGPT Plus, Claude Pro, Gemini Advanced gibi
+  aboneliklerden ayrıdır** ve onlara dahil değildir. Sağlayıcının API
+  hesabına yüklediğin ön ödemeli krediden düşer (Gemini'nin ücretsiz kotası
+  hariç).
+- Kredi bitince istekler durur; kendiliğinden fazla ücret çekilmez. Çoğu
+  sağlayıcıda aylık harcama sınırı da koyabilirsin.
+- Hazır modeller ve fiyatları (milyon token başına, girdi / çıktı, Ekim 2026):
 
-  | Model | Girdi / Çıktı (milyon token) | Not |
-  |---|---|---|
-  | Claude Opus 5.5 | 4 $ / 20 $ | Varsayılan, en akıllısı |
-  | Claude Sonnet 5.5 | 2 $ / 10 $ | Hızlı, yaklaşık yarı fiyatına |
-  | Claude Haiku 5.5 | 0,10 $ / 0,50 $ | En hızlı ve en ucuzu |
+  | Yapay zekâ | Model | Fiyat | Not |
+  |---|---|---|---|
+  | Claude | Opus 5.5 | 4 $ / 20 $ | Varsayılan, en akıllısı |
+  | | Sonnet 5.5 | 2 $ / 10 $ | Hızlı, yarı fiyatına |
+  | | Haiku 5.5 | 0,10 $ / 0,50 $ | En ucuzu |
+  | ChatGPT | GPT-6.1 Sol | 2 $ / 10 $ | Önerilen |
+  | | GPT-6 Astra | 10 $ / 50 $ | En güçlüsü, pahalı |
+  | | GPT-6 Luna | 0,10 $ / 0,50 $ | En ucuzu |
+  | Gemini | 3.8 Flash | 0,75 $ / 3,75 $ | Önerilen, ücretsiz kotası var |
+  | | 4 Argon | 2 $ / 10 $ | En güçlüsü, ücretsiz kotası yok |
+  | | 3.5 Flash-Lite | 0,30 $ / 2,50 $ | Ücretsiz kotası var |
+  | DeepSeek | Flash | 0,30 $ / 1,20 $ | Gece saatlerinde yarı fiyatına |
+  | | V4 Pro | 1,32 $ / 3,96 $ | Daha güçlü |
 
-  "Yarına plan ekle" gibi tek bir istek Sonnet'te genellikle 1 sentin
-  altındadır. Sohbet ekranının altında yaklaşık maliyet yazar.
-
+  "Yarına plan ekle" gibi tek bir istek çoğu modelde 1 sentin altındadır.
+  Sohbet ekranının altında yaklaşık maliyet yazar. Fiyatlar sağlayıcılar
+  tarafından değiştirilebilir; güncelini sağlayıcının sayfasından kontrol et.
 ## Güncelleme
 
 Yeni sürümün APK'sını aynı şekilde indirip kur; mevcut uygulamanın üstüne
@@ -116,7 +137,7 @@ Planlar yalnızca telefonda saklanır (internet hesabı yok).
   İndirilenler'e kaydet.
 - **Yeni telefona taşı:** uygulamayı kur → ⚙ *Ayarlar → Yedekten geri yükle* →
   dosyayı seç.
-- Claude API anahtarı güvenlik için yedeğe girmez; yeni telefonda tekrar gir.
+- API anahtarları güvenlik için yedeğe girmez; yeni telefonda tekrar gir.
 
 Ara sıra yedek almanı öneririz.
 
@@ -128,13 +149,16 @@ Ara sıra yedek almanı öneririz.
 | Bildirimler gelmiyor | *Ayarlar → Uygulamalar → Takvim Takip → Bildirimler* açık mı? Pil ayarını **Kısıtlama yok** yap ([İlk açılış](#3-ilk-açılış)). |
 | Gece kaydırma olmamış | Pil kısıtlaması olabilir; uygulamayı açınca kaçırılan günler sırayla işlenir. |
 | Asistan: "İnternet bağlantısı yok" | İnterneti kontrol et. Devam ediyorsa en son sürümü kur (1.0.0'ın ilk derlemelerinde internet izni eksikti). |
-| Asistan: "API anahtarı geçersiz" | Anahtarı Console'dan yeniden kopyala; başında/sonunda boşluk olmasın. |
-| Asistan: "bakiyesi yetersiz" | Console → Billing'den kredi yükle. |
+| Asistan: "API anahtarı geçersiz" | Anahtarı sağlayıcının sayfasından yeniden kopyala; doğru sağlayıcıyı seçtiğinden emin ol. |
+| Asistan: "bakiyesi yetersiz" / "kredi yok" | Sağlayıcının Billing / Top up bölümünden kredi yükle. |
+| Asistan: "kotan doldu" (Gemini) | Ücretsiz kotanın dakikalık/günlük sınırı doldu; biraz bekle. |
+| Asistan: "Model bulunamadı" | Elle yazdığın model adını kontrol et ya da listeden bir model seç. |
 
 ## Gizlilik
 
 - Planların **yalnızca telefonunda** saklanır; uygulamanın sunucusu yok,
   reklam ve izleme yok.
-- Yalnızca Claude asistanını kullandığında, o sohbetin mesajları ve
-  önümüzdeki 14 günün planları Anthropic'e (api.anthropic.com) gönderilir.
-- API anahtarın telefonda Android Keystore ile şifreli saklanır.
+- Yalnızca asistanı kullandığında, o sohbetin mesajları ve önümüzdeki 14
+  günün planları seçtiğin sağlayıcıya (Anthropic, OpenAI, Google ya da
+  DeepSeek) gönderilir.
+- API anahtarların telefonda Android Keystore ile şifreli saklanır.
