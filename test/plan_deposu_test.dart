@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:takvim_takip/data/plan_deposu.dart';
 import 'package:takvim_takip/data/veritabani.dart';
+import 'package:takvim_takip/logic/yedek.dart';
 import 'package:takvim_takip/models/kayma_kaydi.dart';
 import 'package:takvim_takip/models/plan.dart';
 
@@ -117,6 +118,68 @@ void main() {
     await depo.ayarYaz('sabah_saati', '9');
     await depo.ayarYaz('sabah_saati', '8');
     expect(await depo.ayarOku('sabah_saati'), '8');
+  });
+
+  test('yedek al ve başka bir veritabanına geri yükle', () async {
+    final ders = await depo.ekle(plan('Ders', pzt, 13, sure: 2));
+    await depo.ekle(plan('Spor', sali, 9));
+    await depo.durumDegistir(ders.id!, PlanDurumu.yapildi);
+    await depo.kaymaKaydiEkle(
+      KaymaKaydi(
+        planId: ders.id!,
+        baslik: 'Ders',
+        gun: pzt,
+        baslangicSaati: 10,
+        sure: 1,
+        yeniGun: pzt,
+        yeniBaslangicSaati: 13,
+      ),
+    );
+    await depo.ayarYaz('sabah_saati', '8');
+
+    final yedek = await depo.yedekAl(DateTime(2026, 10, 16, 14, 30));
+    final metin = yedek.jsonMetni();
+
+    // Yeni telefon: boş veritabanında başka bir plan var, yedek yüklenince
+    // tamamen yerine geçer.
+    final db2 = await Veritabani.acFactory(
+      databaseFactoryFfi,
+      inMemoryDatabasePath,
+      tekOrnek: false,
+    );
+    final depo2 = PlanDeposu(db2);
+    await depo2.ekle(plan('Eski', crs, 9));
+    await depo2.yedektenYukle(Yedek.coz(metin));
+
+    expect(
+      await depo2.araliktakiPlanlar(pzt, crs),
+      await depo.araliktakiPlanlar(pzt, crs),
+    );
+    expect(
+      await depo2.gununKaymaKayitlari(pzt),
+      await depo.gununKaymaKayitlari(pzt),
+    );
+    expect(await depo2.ayarOku('sabah_saati'), '8');
+
+    // Geri yüklemeden sonra yeni eklenen plan eski kimliklerle çakışmaz.
+    final yeni = await depo2.ekle(plan('Yeni', crs, 10));
+    expect(yeni.id, isNot(anyOf(ders.id, ders.id! + 1)));
+    await db2.close();
+  });
+
+  test('değişiklik akışı yazma işlemlerinde olay yayar', () async {
+    var olay = 0;
+    final abonelik = depo.degisiklikler.listen((_) => olay++);
+
+    final p = await depo.ekle(plan('Ders', pzt, 13));
+    await depo.guncelle(p.copyWith(baslik: 'Matematik'));
+    await depo.durumDegistir(p.id!, PlanDurumu.yapildi);
+    await depo.ayarYaz('sabah_saati', '7');
+    await depo.sil(p.id!);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(olay, 5);
+    await abonelik.cancel();
   });
 
   test('veritabanı geçersiz saati kendisi de reddeder', () async {

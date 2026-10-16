@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 
 import '../logic/kaydirma_motoru.dart';
+import '../logic/yedek.dart';
 import '../models/kayma_kaydi.dart';
 import '../models/plan.dart';
 import '../utils/tarih.dart';
@@ -244,6 +245,46 @@ class PlanDeposu {
     return (yapilmayan: int.parse(p[0]), kayan: int.parse(p[1]));
   }
 
+  // ------------------------------------------------------------- yedekleme
+
+  /// Bütün verinin anlık görüntüsü (docs/SPEC.md §8).
+  Future<Yedek> yedekAl(DateTime simdi) async {
+    return _db.transaction((txn) async {
+      final planlar = await txn.query('planlar', orderBy: 'id');
+      final kayitlar = await txn.query('kayma_kayitlari', orderBy: 'id');
+      final ayarlar = await txn.query('ayarlar', orderBy: 'anahtar');
+      return Yedek(
+        olusturma: simdi,
+        planlar: planlar.map(Plan.fromMap).toList(),
+        kaymaKayitlari: kayitlar.map(KaymaKaydi.fromMap).toList(),
+        ayarlar: {
+          for (final a in ayarlar) a['anahtar'] as String: a['deger'] as String,
+        },
+      );
+    });
+  }
+
+  /// Mevcut bütün veriyi silip [yedek]tekiyle değiştirir. Tek bir işlemde
+  /// yapılır: yarıda kesilirse eski veriler olduğu gibi kalır.
+  Future<void> yedektenYukle(Yedek yedek) async {
+    await _db.transaction((txn) async {
+      await txn.delete('planlar');
+      await txn.delete('kayma_kayitlari');
+      await txn.delete('ayarlar');
+      // Kimlikler korunur: kayma kayıtları planlara kimlikle bağlı.
+      for (final p in yedek.planlar) {
+        await txn.insert('planlar', p.toMap());
+      }
+      for (final k in yedek.kaymaKayitlari) {
+        await txn.insert('kayma_kayitlari', k.toMap());
+      }
+      for (final a in yedek.ayarlar.entries) {
+        await txn.insert('ayarlar', {'anahtar': a.key, 'deger': a.value});
+      }
+    }, exclusive: true);
+    _degisiklik.add(null);
+  }
+
   // ---------------------------------------------------------------- ayarlar
 
   Future<String?> ayarOku(String anahtar) async {
@@ -255,10 +296,13 @@ class PlanDeposu {
     return satirlar.isEmpty ? null : satirlar.first['deger'] as String;
   }
 
+  /// Ayarı yazar. Sabah bildirimi saati gibi ayarlar bildirimleri
+  /// etkilediği için değişiklik olayı da yayılır.
   Future<void> ayarYaz(String anahtar, String deger) async {
     await _db.insert('ayarlar', {
       'anahtar': anahtar,
       'deger': deger,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+    _degisiklik.add(null);
   }
 }
