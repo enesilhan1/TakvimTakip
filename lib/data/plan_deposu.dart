@@ -157,14 +157,38 @@ class PlanDeposu {
 
   // --------------------------------------------------------------- kaydırma
 
-  /// Bir gün kapanışının sonucunu tek bir işlemde (transaction) yazar:
-  /// planların yeni yerleri, kayma kayıtları ve verilen ayarlar. Yarıda
-  /// kesilirse hiçbiri yazılmaz, planlar yarım kaymış halde kalmaz.
-  Future<void> kaydirmaKaydet(
-    KaydirmaSonucu sonuc, {
-    Map<String, String> ayarlar = const {},
-  }) async {
-    await _db.transaction((txn) async {
+  /// [gun]ü kapatır: kaydırmayı hesaplar ve sonucu yazar (docs/SPEC.md §4).
+  ///
+  /// Hepsi tek bir **özel** (exclusive) işlemde yapılır: kontrol, okuma,
+  /// hesaplama ve yazma arasında başka hiçbir bağlantı veritabanına
+  /// yazamaz. Gece yarısı arka plan görevi ile açılan uygulama aynı anda
+  /// çalışsa bile gün iki kez kaydırılmaz:
+  /// [sonGunAyari] hâlâ bir önceki günü göstermiyorsa (gün zaten
+  /// kapatılmışsa ya da sıra atlanıyorsa) hiçbir şey yapmaz ve `null` döner.
+  ///
+  /// Yarıda kesilirse hiçbiri yazılmaz; planlar yarım kaymış halde kalmaz.
+  Future<KaydirmaSonucu?> gunuKapatIslemi(
+    DateTime gun, {
+    required String sonGunAyari,
+  }) {
+    return _db.transaction((txn) async {
+      final kayitli = await txn.query(
+        'ayarlar',
+        where: 'anahtar = ?',
+        whereArgs: [sonGunAyari],
+      );
+      if (kayitli.isEmpty ||
+          kayitli.first['deger'] != gunAnahtari(gunEkle(gun, -1))) {
+        return null;
+      }
+
+      final satirlar = await txn.query(
+        'planlar',
+        where: 'gun >= ?',
+        whereArgs: [gunAnahtari(gun)],
+      );
+      final sonuc = gunuKapat(gun, satirlar.map(Plan.fromMap).toList());
+
       for (final plan in sonuc.degisenPlanlar) {
         await txn.update(
           'planlar',
@@ -176,13 +200,30 @@ class PlanDeposu {
       for (final kayit in sonuc.kaymaKayitlari) {
         await txn.insert('kayma_kayitlari', kayit.toMap()..remove('id'));
       }
-      for (final a in ayarlar.entries) {
-        await txn.insert('ayarlar', {
-          'anahtar': a.key,
-          'deger': a.value,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-    });
+      Future<void> ayar(String anahtar, String deger) => txn.insert('ayarlar', {
+        'anahtar': anahtar,
+        'deger': deger,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await ayar(sonGunAyari, gunAnahtari(gun));
+      // Sabah bildirimindeki "Dün 1 plan yapılmadı, 4 plan kaydı" için.
+      await ayar(
+        _kapanisOzetiAyari(gun),
+        '${sonuc.yapilmayanSayisi};${sonuc.kayanSayisi}',
+      );
+      return sonuc;
+    }, exclusive: true);
+  }
+
+  static String _kapanisOzetiAyari(DateTime gun) =>
+      'kapanis_ozeti_${gunAnahtari(gun)}';
+
+  /// [gun] kapanırken kaç planın yapılmadığı ve toplam kaç planın kaydığı.
+  /// Gün henüz kapanmadıysa `null`.
+  Future<({int yapilmayan, int kayan})?> kapanisOzeti(DateTime gun) async {
+    final deger = await ayarOku(_kapanisOzetiAyari(gun));
+    if (deger == null) return null;
+    final p = deger.split(';');
+    return (yapilmayan: int.parse(p[0]), kayan: int.parse(p[1]));
   }
 
   // ---------------------------------------------------------------- ayarlar

@@ -127,6 +127,36 @@ void main() {
     expect(await takvim(), ['Salı 09:00 A']);
   });
 
+  test('kapanış özeti sabah bildirimi için saklanır', () async {
+    await sonIslenen(pzr);
+    await ekle('A', pzt, 9);
+    await ekle('B', pzt, 10, durum: PlanDurumu.yapildi);
+    await ekle('X', sali, 9);
+
+    await servis.bekleyenGunleriIsle(an(sali, 8));
+
+    final ozet = await depo.kapanisOzeti(pzt);
+    expect(ozet?.yapilmayan, 1);
+    expect(ozet?.kayan, 2); // A kendisi + itilen X
+    expect(await depo.kapanisOzeti(sali), isNull);
+  });
+
+  test('aynı anda iki görev çalışsa da gün bir kez kaydırılır', () async {
+    // Gece yarısı arka plan görevi ile uygulamanın açılışı çakışırsa.
+    await sonIslenen(pzr);
+    final a = await ekle('A', pzt, 9);
+
+    final sonuclar = await Future.wait([
+      servis.bekleyenGunleriIsle(an(sali, 0)),
+      KaydirmaServisi(depo).bekleyenGunleriIsle(an(sali, 0)),
+    ]);
+
+    expect(sonuclar.expand((s) => s), hasLength(1));
+    expect(await takvim(), ['Salı 09:00 A']);
+    expect((await depo.planGetir(a.id!))!.yapilmadiSayisi, 1);
+    expect(await depo.gununKaymaKayitlari(pzt), hasLength(1));
+  });
+
   test('bugünün planlarına dokunmaz (gün henüz bitmedi)', () async {
     await sonIslenen(pzr);
     await ekle('Bugun', pzt, 9);

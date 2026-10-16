@@ -33,14 +33,14 @@ class KaydirmaServisi {
     final sonuclar = <KaydirmaSonucu>[];
     var gun = gunEkle(gunAnahtarindan(kayitli), 1);
     while (!gun.isAfter(dun)) {
-      final sonuc = gunuKapat(gun, await depo.gundenItibarenPlanlar(gun));
-      // Planlar ve "son işlenen gün" aynı işlemde yazılır: yarıda kesilirse
-      // bu gün bir sonraki açılışta baştan işlenir, iki kez işlenmez.
-      await depo.kaydirmaKaydet(
-        sonuc,
-        ayarlar: {sonIslenenGunAyari: gunAnahtari(gun)},
+      // Kontrol, hesaplama ve "son işlenen gün" aynı özel işlemde: yarıda
+      // kesilirse bu gün bir sonraki açılışta baştan işlenir; başka bir
+      // görev aynı anda kapattıysa null döner ve iki kez işlenmez.
+      final sonuc = await depo.gunuKapatIslemi(
+        gun,
+        sonGunAyari: sonIslenenGunAyari,
       );
-      sonuclar.add(sonuc);
+      if (sonuc != null) sonuclar.add(sonuc);
       gun = gunEkle(gun, 1);
     }
     return sonuclar;
