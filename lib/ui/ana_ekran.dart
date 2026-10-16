@@ -4,9 +4,11 @@ import '../data/plan_deposu.dart';
 import 'ay_gorunumu.dart';
 import 'gun_gorunumu.dart';
 import 'hafta_gorunumu.dart';
+import 'sohbet_ekrani.dart';
 import 'yil_gorunumu.dart';
 
-/// Alttaki menüyle görünümler arasında geçiş: Gün / Hafta / Ay / Yıl.
+/// Alttaki menüyle görünümler arasında geçiş: Gün / Hafta / Ay / Yıl ve
+/// Claude asistanı.
 ///
 /// Seçili gün görünümler arasında ortaktır: haftalık ya da aylık görünümde
 /// bir güne dokununca gün görünümü o güne açılır.
@@ -69,6 +71,7 @@ class _AnaEkranState extends State<AnaEkran> {
           _sekme = 2;
         }),
       ),
+      4 => SohbetEkrani(depo: widget.depo),
       _ => GunGorunumu(
         key: ValueKey(_gunSurumu),
         depo: widget.depo,
@@ -93,6 +96,10 @@ class _AnaEkranState extends State<AnaEkran> {
           NavigationDestination(icon: Icon(Icons.view_week), label: 'Hafta'),
           NavigationDestination(icon: Icon(Icons.calendar_month), label: 'Ay'),
           NavigationDestination(icon: Icon(Icons.grid_view), label: 'Yıl'),
+          NavigationDestination(
+            icon: Icon(Icons.auto_awesome_outlined),
+            label: 'Asistan',
+          ),
         ],
       ),
     );
