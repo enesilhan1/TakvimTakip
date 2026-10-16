@@ -1,17 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
-  runApp(const TakvimTakipApp());
+import 'data/plan_deposu.dart';
+import 'data/veritabani.dart';
+import 'logic/kaydirma_servisi.dart';
+import 'ui/gun_gorunumu.dart';
+import 'utils/tarih.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final depo = PlanDeposu(await Veritabani.ac());
+  // Açılışta kapanmış ama işlenmemiş günleri kaydır (SPEC §5).
+  await KaydirmaServisi(depo).bekleyenGunleriIsle(DateTime.now());
+
+  runApp(TakvimTakipApp(depo: depo));
 }
 
 class TakvimTakipApp extends StatelessWidget {
-  const TakvimTakipApp({super.key});
+  final PlanDeposu depo;
+
+  /// Testlerde sabit bir "bugün" vermek için.
+  final DateTime? bugunOverride;
+
+  const TakvimTakipApp({super.key, required this.depo, this.bugunOverride});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Takvim Takip',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('tr'),
+      supportedLocales: const [Locale('tr')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
@@ -21,20 +42,7 @@ class TakvimTakipApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const _BaslangicEkrani(),
-    );
-  }
-}
-
-/// Geçici ekran. Aşama 3'te gün görünümü ile değiştirilecek.
-class _BaslangicEkrani extends StatelessWidget {
-  const _BaslangicEkrani();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Takvim Takip')),
-      body: const Center(child: Text('Yakında burada planların olacak.')),
+      home: GunGorunumu(depo: depo, bugun: bugunOverride ?? bugun()),
     );
   }
 }

@@ -42,6 +42,25 @@ const _gunAdlari = [
 /// Türkçe gün adı: `Pazartesi`, `Salı`...
 String gunAdi(DateTime gun) => _gunAdlari[gun.weekday - 1];
 
+const ayAdlari = [
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
+];
+
+/// `19 Ekim 2026 Pazartesi`
+String uzunTarih(DateTime gun) =>
+    '${gun.day} ${ayAdlari[gun.month - 1]} ${gun.year} ${gunAdi(gun)}';
+
 /// `13:00` biçiminde saat metni.
 String saatMetni(int saat) => '${saat.toString().padLeft(2, '0')}:00';
 
