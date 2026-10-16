@@ -302,10 +302,26 @@ class HaftaPlanBlogu extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(3),
-          child: Text(
-            '${yapildi ? '✓ ' : ''}${plan.sabit ? '📌' : ''}${plan.baslik}',
+          child: Text.rich(
+            TextSpan(
+              text:
+                  '${yapildi ? '✓ ' : ''}${plan.sabit ? '📌' : ''}'
+                  '${plan.baslik}',
+              children: [
+                // Not başlığın altında, yer kaldığı kadar.
+                if (plan.not.isNotEmpty)
+                  TextSpan(
+                    text: '\n${plan.not}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: (soluk ? renk.outline : renk.onPrimaryContainer)
+                          .withValues(alpha: 0.75),
+                    ),
+                  ),
+              ],
+            ),
             // Uzun planlarda daha çok satır göster.
-            maxLines: plan.sure * 2,
+            maxLines: plan.sure * 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,

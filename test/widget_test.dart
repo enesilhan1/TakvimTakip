@@ -68,6 +68,49 @@ void main() {
     expect(find.text('12:00'), findsOneWidget);
   });
 
+  testWidgets('not başlığın altında görünür, büyük yazıda taşmaz', (
+    tester,
+  ) async {
+    await depo.ekle(
+      Plan(
+        baslik: 'Kitap',
+        not: '50 sayfa, 3. bölüm',
+        gun: sali,
+        baslangicSaati: 9,
+      ),
+    );
+    await depo.ekle(
+      Plan(
+        baslik: 'Ders',
+        not: 'Matematik: türev ve integral tekrarı, sonra deneme sınavı',
+        gun: sali,
+        baslangicSaati: 10,
+        sure: 2,
+      ),
+    );
+    await ac(tester, bugun: pzt);
+    await tester.tap(find.byTooltip('Sonraki gün'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+
+    expect(find.text('50 sayfa, 3. bölüm'), findsOneWidget);
+    expect(
+      find.text('Matematik: türev ve integral tekrarı, sonra deneme sınavı'),
+      findsOneWidget,
+    );
+    // Not başlığın altında
+    final baslikY = tester.getTopLeft(find.text('Kitap')).dy;
+    final notY = tester.getTopLeft(find.text('50 sayfa, 3. bölüm')).dy;
+    expect(notY, greaterThan(baslikY));
+
+    // Telefonda büyük yazı tipi seçiliyse kart taşmamalı (taşma testi
+    // otomatik olarak başarısız eder).
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await tester.pumpAndSettle();
+    expect(find.text('Kitap'), findsOneWidget);
+  });
+
   testWidgets('kayma izini ve geçmiş gündeki yapılmayanı gösterir', (
     tester,
   ) async {

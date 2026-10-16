@@ -364,29 +364,50 @@ class PlanKarti extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      plan.baslik,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        decoration: iptal ? TextDecoration.lineThrough : null,
+                // Kart yüksekliği saat satırına sabit; telefonda çok büyük
+                // yazı tipi seçiliyse kartın içi en fazla 1,3 kat büyür ki
+                // başlık ve saat sığsın.
+                child: MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        plan.baslik,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          decoration: iptal ? TextDecoration.lineThrough : null,
+                        ),
                       ),
-                    ),
-                    Text(
-                      altBilgi,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: renk.onSurfaceVariant,
+                      // Not: başlığın hemen altında. 1 saatlik kartta tek
+                      // satır, uzun planlarda kart büyüdükçe daha çok satır.
+                      // Büyük yazı tipinde yer kalmazsa kısalır, taşmaz.
+                      if (plan.not.isNotEmpty)
+                        Flexible(
+                          child: Text(
+                            plan.not,
+                            maxLines: plan.sure == 1 ? 1 : plan.sure * 2 + 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: renk.onSurface.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                      Text(
+                        altBilgi,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: renk.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               IconButton(

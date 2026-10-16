@@ -75,6 +75,15 @@ void main() {
     expect(blok.height, closeTo(2 * 48 - 2, 0.1));
   });
 
+  testWidgets('blokta not başlığın altında görünür', (tester) async {
+    await depo.ekle(
+      Plan(baslik: 'Ders', not: 'Türev', gun: crs, baslangicSaati: 9, sure: 2),
+    );
+    await haftayiAc(tester);
+
+    expect(find.text('Ders\nTürev'), findsOneWidget);
+  });
+
   testWidgets('hafta değiştirme', (tester) async {
     await haftayiAc(tester);
 
