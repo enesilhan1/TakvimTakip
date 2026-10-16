@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Üç widget'ın (günlük, haftalık, aylık) ortak yerleşimi. Türe göre
+     grafik (haftalık) ya da ilerleme çubuğu görünür; büyük boyutta
+     sonraki planlar listelenir. Metinleri TakvimWidget.kt doldurur. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_kok"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_arka_plan"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/baslik"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="Takvim Takip"
+            android:textColor="@color/widget_ikincil"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/sayi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/widget_metin"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/ilerleme"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="6dp"
+        android:max="100"
+        android:progressBackgroundTint="@color/widget_iz"
+        android:progressTint="@color/widget_tamam" />
+
+    <ImageView
+        android:id="@+id/grafik"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:layout_marginTop="6dp"
+        android:contentDescription="Haftalık tamamlanma"
+        android:scaleType="fitXY"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/odak_ust"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="@color/widget_vurgu"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/odak_baslik"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="Yükleniyor…"
+                android:textColor="@color/widget_metin"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/odak_not"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/widget_ikincil"
+                android:textSize="13sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/yapildi_butonu"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_buton"
+            android:minWidth="0dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="✓ Yapıldı"
+            android:textAllCaps="false"
+            android:textColor="@color/widget_buton_metin"
+            android:textSize="13sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/sonrakiler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/sonraki_1"
+            style="@style/WidgetSonraki" />
+
+        <TextView
+            android:id="@+id/sonraki_2"
+            style="@style/WidgetSonraki" />
+
+        <TextView
+            android:id="@+id/sonraki_3"
+            style="@style/WidgetSonraki" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Büyük widget'taki "sonraki planlar" satırı. -->
+    <style name="WidgetSonraki">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textColor">@color/widget_ikincil</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <string name="widget_gunluk_ad">Takvim Takip · Bugün</string>
+    <string name="widget_gunluk_aciklama">Bugün kaç planın var, kaçı tamamlandı ve şu anki plan</string>
+    <string name="widget_haftalik_ad">Takvim Takip · Bu hafta</string>
+    <string name="widget_haftalik_aciklama">Haftanın tamamlanma grafiği ve şu anki plan</string>
+    <string name="widget_aylik_ad">Takvim Takip · Bu ay</string>
+    <string name="widget_aylik_aciklama">Ayın tamamlanma oranı ve şu anki plan</string>
+</resources>

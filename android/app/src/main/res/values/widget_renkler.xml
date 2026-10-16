@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ana ekran widget'larının renkleri (açık tema). Koyu tema: values-night. -->
+<resources>
+    <color name="widget_zemin">#F4F5FB</color>
+    <color name="widget_metin">#1B1B21</color>
+    <color name="widget_ikincil">#5D5E70</color>
+    <color name="widget_vurgu">#3F51B5</color>
+    <color name="widget_iz">#DCDFF0</color>
+    <color name="widget_tamam">#2E7D32</color>
+    <color name="widget_buton_metin">#FFFFFF</color>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Boyutlar: varsayılan 4x2 hücre, küçültülüp büyütülebilir. Büyütülünce
+     sonraki planlar da listelenir. Güncellemeyi uygulama yapar (planlar
+     değişince, plan başlayıp bitince, gece yarısı); 30 dakikalık sistem
+     güncellemesi yalnızca yedek. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_haftalik_aciklama"
+    android:initialLayout="@layout/widget_takvim"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="100dp"
+    android:previewLayout="@layout/widget_takvim"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

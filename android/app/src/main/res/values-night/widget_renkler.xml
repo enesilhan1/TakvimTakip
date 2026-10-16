@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ana ekran widget'larının renkleri (koyu tema). -->
+<resources>
+    <color name="widget_zemin">#1E2030</color>
+    <color name="widget_metin">#E4E1EC</color>
+    <color name="widget_ikincil">#A9A8BC</color>
+    <color name="widget_vurgu">#B9C3FF</color>
+    <color name="widget_iz">#34374A</color>
+    <color name="widget_tamam">#81C784</color>
+    <color name="widget_buton_metin">#1B1F3A</color>
+</resources>
