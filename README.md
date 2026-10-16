@@ -1,52 +1,60 @@
 # Takvim Takip
 
-Kişisel kullanım için saatlik plan takip uygulaması (Flutter, Android).
+Saatlik planlarını takip eden, **yapmadığın planı otomatik olarak sonraki
+plan saatine kaydıran** kişisel Android uygulaması.
 
-Yapılmadı olarak kalan planlar gün sonunda otomatik olarak sonraki plan
-slotlarına kayar ("yürüyen bant"). Boş saatlere ve sabit planlara dokunulmaz.
+<p>
+  <img src="docs/ekran-goruntuleri/gun.png" width="180" alt="Gün görünümü">
+  <img src="docs/ekran-goruntuleri/hafta.png" width="180" alt="Haftalık tablo">
+  <img src="docs/ekran-goruntuleri/ay.png" width="180" alt="Aylık görünüm">
+  <img src="docs/ekran-goruntuleri/yil.png" width="180" alt="Yıllık istatistik">
+</p>
 
-Tüm kurallar ve yol haritası: [docs/SPEC.md](docs/SPEC.md)
+## Özellikler
 
-## Telefona kurulum
+- **Yürüyen bant:** Gün 23:59'da kapanınca işaretlemediğin plan, sıradaki
+  plan saatine kayar; oradaki plan bir sonrakine… Boş saatlerine (uyku!) ve
+  📌 sabit planlara dokunulmaz. Kaç kez ertelendiği sayılır.
+- **Saatlik planlar:** `13:00 Ders` ya da `13:00–15:00 Ders`; not, sabit, iptal.
+- **Görünümler:** Gün · e-tablo gibi Hafta · Ay · Yıl (GitHub tarzı renkli
+  kutucuklar, seriler, en çok ertelenenler).
+- **Bildirimler:** Sabah özeti ("Dün 1 plan yapılmadı, 4 plan kaydı…") ve her
+  plandan 5 dakika önce hatırlatıcı. Uygulama kapalıyken de çalışır.
+- **Yedekleme:** Tek dosyaya dışa aktar / geri yükle.
+- **Claude asistanı (isteğe bağlı):** "Yarın 18:00'e spor ekle" de; Claude
+  önizleme gösterir, sen onaylarsın. Kendi Anthropic API anahtarınla.
+- İnternet hesabı yok, reklam yok; veriler telefonda. Türkçe.
 
-APK dosyası: `build/app/outputs/flutter-apk/app-release.apk`
+<p>
+  <img src="docs/ekran-goruntuleri/asistan.png" width="180" alt="Claude asistanı">
+  <img src="docs/ekran-goruntuleri/bildirim.png" width="180" alt="Hatırlatıcı bildirimi">
+  <img src="docs/ekran-goruntuleri/ayarlar.png" width="180" alt="Ayarlar">
+</p>
 
-**Yol 1: USB kablosuyla**
-1. Telefonda *Ayarlar → Telefon hakkında → Yapı numarası*'na 7 kez dokun
-   (Geliştirici seçenekleri açılır).
-2. *Ayarlar → Sistem → Geliştirici seçenekleri → USB hata ayıklama*'yı aç.
-3. Telefonu bağla, telefonda çıkan "USB hata ayıklamaya izin ver" sorusuna
-   izin ver ve bilgisayarda çalıştır:
-   ```bash
-   adb install -r build/app/outputs/flutter-apk/app-release.apk
-   ```
+## Kurulum (Android 7.0+)
 
-**Yol 2: Dosyayı telefona atarak**
-1. APK'yı telefona gönder (Drive, kablo, e-posta…).
-2. Telefonda dosyaya dokun; "bilinmeyen uygulamaları yükle" izni sorulursa
-   o uygulama (ör. Dosyalar) için izin ver.
+1. Telefondan **[Releases → son sürüm](https://github.com/enesilhan1/TakvimTakip/releases/latest)** sayfasına git
+   ve `.apk` dosyasını indir.
+2. Dosyayı aç → "bilinmeyen uygulamalar" iznini ver → **Yükle**
+   (Play Protect uyarısında *Yine de yükle*).
+3. İlk açılışta **bildirim iznine** izin ver.
 
-**İlk açılışta**
-- Bildirim izni sorulur: **İzin ver** (sabah özeti ve hatırlatıcılar için).
-- Bazı telefonlar (Xiaomi, Samsung, Huawei…) pil tasarrufu için arka plan
-  alarmlarını geciktirebilir. *Ayarlar → Uygulamalar → Takvim Takip → Pil*
-  bölümünden **Kısıtlama yok / Optimize etme** seçilirse gece yarısı kaydırması
-  ve hatırlatıcılar tam zamanında çalışır. (Seçilmese bile kaydırma, uygulama
-  açılınca mutlaka yapılır.)
+Adım adım anlatım, Claude asistanının kurulumu ve ücretlendirmesi, yedekleme
+ve sorun giderme: **[docs/KURULUM.md](docs/KURULUM.md)**
 
-**Güncelleme**: Yeni APK'yı aynı şekilde kur; veriler silinmez.
+## Nasıl çalışır
 
-## Sürüm imzası (önemli)
+```
+Pazartesi                    Salı (önce)          Salı (sonra)
+13:00 Ders    ✅             13:00 Ders           13:00 Kitap   (1 kez yapılmadı)
+14:00 Spor    ✅             14:00 📌 Spor        14:00 📌 Spor (sabit, atlanır)
+15:00 Kitap   ⏳ yapılmadı   15:00 Kitap2         15:00 Ders
+                                                  → Kitap2 bir sonraki plan saatine
+```
 
-Sürüm APK'sı `android/takvim_takip.jks` anahtarıyla imzalanır, şifreleri
-`android/key.properties` dosyasındadır. İkisi de git'e **girmez**.
+Bütün kurallar ve örnekler: [docs/SPEC.md](docs/SPEC.md)
 
-- Bu iki dosyayı güvenli bir yere (ör. kişisel bulut) **yedekle**.
-- Kaybolurlarsa yeni sürüm telefondakinin üstüne kurulamaz; uygulamayı silip
-  yeniden kurmak gerekir (önce uygulamadan yedek al: *Ayarlar → Yedeği dışa
-  aktar*).
-- Dosyalar yoksa derleme debug anahtarına düşer (o da yalnızca bu
-  bilgisayarda geçerlidir).
+---
 
 ## Geliştirme
 
@@ -59,3 +67,25 @@ flutter build apk --release  # build/app/outputs/flutter-apk/app-release.apk
 
 Gereksinimler: Flutter 3.41+, JDK 21 (`flutter config --jdk-dir` ile; Android
 Studio'nun içindeki Java 25 Gradle 8.14 ile çalışmaz), Android SDK.
+
+Kod yapısı:
+
+| Klasör | İçerik |
+|---|---|
+| `lib/logic/` | Kaydırma motoru, istatistik, bildirim planı, yedek biçimi (saf Dart, testli) |
+| `lib/data/` | SQLite şeması ve `PlanDeposu` |
+| `lib/ui/` | Ekranlar |
+| `lib/platform/` | Bildirimler ve gece yarısı arka plan görevi |
+| `lib/claude/` | Claude API istemcisi ve sohbet döngüsü |
+| `test/` | Birim ve widget testleri |
+
+### Sürüm imzası
+
+Sürüm APK'sı `android/takvim_takip.jks` anahtarıyla imzalanır; şifreler
+`android/key.properties` dosyasındadır. İkisi de git'e **girmez**.
+
+- Bu iki dosyayı güvenli bir yere **yedekle**. Kaybolursa yeni sürümler
+  kurulu uygulamanın üstüne kurulamaz.
+- Projeyi kendin derliyorsan bu dosyalar olmadan debug anahtarıyla
+  imzalanır; o APK, Releases'teki sürümün üstüne kurulmaz (önce kaldırman
+  gerekir).
