@@ -30,7 +30,7 @@ Bilgisayara, geliştirici araçlarına ya da hesap açmaya gerek yok.
 1. Telefonundan bu projenin GitHub sayfasındaki **Releases** bölümüne git:
    **[Son sürüm](https://github.com/enesilhan1/TakvimTakip/releases/latest)**
 2. **Assets** altında `.apk` ile biten dosyaya dokun
-   (ör. `TakvimTakip-1.0.0.apk`) ve indir.
+   (ör. `TakvimTakip-1.2.0.apk`) ve indir.
 
 > Bilgisayardan indirdiysen dosyayı telefona kabloyla, Google Drive'la ya da
 > kendine e-postayla gönder.
