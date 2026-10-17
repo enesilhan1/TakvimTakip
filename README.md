@@ -10,6 +10,12 @@ plan saatine kaydıran** kişisel Android uygulaması.
   <img src="docs/ekran-goruntuleri/yil.png" width="180" alt="Yıllık istatistik">
 </p>
 
+### 🎬 Tanıtım videosu
+
+[![Takvim Takip tanıtım videosu](https://img.youtube.com/vi/5hoKEEjNW5s/hqdefault.jpg)](https://youtu.be/5hoKEEjNW5s)
+
+Uygulamanın nasıl kullanıldığını izlemek için görsele tıkla (YouTube'da açılır).
+
 ## Özellikler
 
 - **Yürüyen bant:** Gün 23:59'da kapanınca işaretlemediğin plan, sıradaki
